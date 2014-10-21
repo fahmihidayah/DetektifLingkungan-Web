@@ -23,6 +23,7 @@ public class RequestHandler implements Constants {
 
 	public void setArrayKey(String[] arrayKey) {
 		this.arrayKey = arrayKey;
+		checkError();
 	}
 
 	public RequestHandler(boolean checkAuth, Form form) {
