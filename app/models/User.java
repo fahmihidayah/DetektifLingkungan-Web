@@ -56,8 +56,10 @@ public class User extends Model {
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Notif> listNotif;
 	
+	// pilih salah satu (masih dalam tahap riset)
 	@ManyToMany(cascade = CascadeType.ALL, mappedBy = "listFollowingUser")
 	public List<User> listFollowerUser;
+	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	public List<User> listFollowingUser;
 	

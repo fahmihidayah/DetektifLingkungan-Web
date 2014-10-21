@@ -12,6 +12,8 @@ import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import play.db.ebean.Model;
 // kurang data imagenya
 @Entity
@@ -27,6 +29,7 @@ public class Laporan extends Model {
 	public User user;
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Komentar> listKomentar;
+	@JsonIgnore
 	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL)
 	public List<User> listUserPemantau;
 	@Column
