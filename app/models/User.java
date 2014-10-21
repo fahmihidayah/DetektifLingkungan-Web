@@ -37,12 +37,14 @@ public class User extends Model {
 //	@Transient
 //	@JsonIgnore
 	@Column
-	public String password ;
+	public String password;
 	
 	@Column
-	public String type = "ADMIN";
-//	@Column(nullable = false)
-//	public Date dateCreation = new Date();
+	public String type;
+	@Column
+	public String name;
+	@Column
+	public String email;
 
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);

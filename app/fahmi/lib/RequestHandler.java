@@ -14,7 +14,7 @@ public class RequestHandler implements Constants {
 
 	public RequestHandler(Form form) {
 		super();
-		this.form = form;
+		this.form = form.bindFromRequest();
 	}
 
 	public String[] getArrayKey() {
