@@ -56,6 +56,11 @@ public class User extends Model {
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Notif> listNotif;
 	
+	@ManyToMany(cascade = CascadeType.ALL, mappedBy = "listFollowingUser")
+	public List<User> listFollowerUser;
+	@ManyToMany(cascade = CascadeType.ALL)
+	public List<User> listFollowingUser;
+	
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);
 
