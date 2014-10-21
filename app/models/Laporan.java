@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
@@ -26,7 +27,7 @@ public class Laporan extends Model {
 	public User user;
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Komentar> listKomentar;
-	@OneToMany(cascade = CascadeType.ALL)
+	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL)
 	public List<User> listUserPemantau;
 	@Column
 	public String katagoriLaporan;

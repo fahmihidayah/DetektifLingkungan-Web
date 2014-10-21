@@ -4,14 +4,18 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.management.RuntimeErrorException;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 import javax.validation.Constraint;
 
@@ -46,7 +50,12 @@ public class User extends Model {
 	public String name;
 	@Column
 	public String email;
-
+	
+	@ManyToMany(cascade = CascadeType.ALL)
+	public List<Laporan> listPantauLaporan;
+	@OneToMany(cascade = CascadeType.ALL)
+	public List<Notif> listNotif;
+	
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);
 
