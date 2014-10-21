@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class JsonHandler {
 
-    public static ObjectNode getSuitableResponse(Object data, boolean success){
+    public static JsonNode getSuitableResponse(Object data, boolean success){
     	ObjectNode node = (success? getSuccessObjectNode(): getFailureObjectNode());
     	if(data instanceof Form){
     		node.put("data", getErrorMessage(((Form) data)));
@@ -19,7 +19,7 @@ public class JsonHandler {
     	else {
     		node.put("data", Json.toJson(data));
     	}
-    	return node;
+    	return Json.toJson(node);
     }
     
     private static ObjectNode getSuccessObjectNode(){

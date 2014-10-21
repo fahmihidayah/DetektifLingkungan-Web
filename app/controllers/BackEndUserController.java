@@ -1,7 +1,7 @@
 package controllers;
 
-import com.sun.jna.platform.win32.Netapi32Util.User;
-
+import models.User;
+import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
 import play.*;
 import play.data.Form;
@@ -21,6 +21,15 @@ public class BackEndUserController extends Controller {
     public static Result registerUser(){
     	String key[] = {"name", "userName", "password", "email"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
-    	return ok();
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = new User(requestHandler.getStringValue("userName"), 
+    			requestHandler.getStringValue("password"));
+    	user.name = requestHandler.getStringValue("name");
+    	user.email = requestHandler.getStringValue("email");
+    	user.save();
+    	return ok(JsonHandler.getSuitableResponse(user, true));
     }
 }
