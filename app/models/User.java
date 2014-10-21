@@ -33,6 +33,7 @@ public class User extends Model {
 	@JsonIgnore
 	@Column(length = 64, nullable = false)
 	public byte[] shaPassword;
+	
 // uncomment the transient to delete password column and more secure 
 //	@Transient
 //	@JsonIgnore
@@ -49,13 +50,6 @@ public class User extends Model {
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);
 
-	
-//    public User() {
-//		super();
-//		this.setPassword(password);
-//		this.dateCreation = new Date();
-//	}
-
 	public User(String userName, String password) {
 		super();
 		this.userName = userName;
@@ -71,18 +65,6 @@ public class User extends Model {
         shaPassword = getSha512(password);
     }
 
-//	
-//	public String createToken() {
-//		authToken = UUID.randomUUID().toString();
-//		save();
-//		return authToken;
-//	}
-//
-//	public void deleteAuthToken() {
-//		authToken = null;
-//		save();
-//	}
-
 	public static byte[] getSha512(String value) {
 
 		try {
@@ -94,23 +76,7 @@ public class User extends Model {
 			throw new RuntimeException(e);
 		}
 	}
-	
-//	public static User findByAuthToken(String authToken){
-//		if(authToken == null){
-//			return null;
-//		}
-//		try{
-//			return finder.where().eq("authToken",authToken).findUnique();	
-//		}
-//		catch(Exception e){
-//			return null;	
-//		}
-//	}
-	
-//	public static User findByEmailAddressAndPassword(String userName, String password){
-//		return finder.where().eq("userName", userName).eq("shaPassword", getSha512(password)).findUnique();
-//	}
-//	
+
 	public static User findByUserName(String userName){
 		return finder.where().eq("userName", userName).findUnique();
 	}
