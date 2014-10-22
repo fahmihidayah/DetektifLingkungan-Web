@@ -1,5 +1,6 @@
 package models;
 
+import java.util.Calendar;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -34,6 +35,12 @@ public class Laporan extends Model {
 	public List<User> listUserPemantau;
 	@Column
 	public String katagoriLaporan;
+	@Column
+	public Double longitude;
+	@Column
+	public Double latitude;
+	@Column
+	public Calendar time;
 	
 	public static Finder<Long, Laporan> finder = new Finder<>(Long.class, Laporan.class);
 

@@ -23,6 +23,9 @@ create table laporan (
   tanggapan_id              bigint,
   user_id                   bigint,
   katagori_laporan          varchar(255),
+  longitude                 double,
+  latitude                  double,
+  time                      timestamp,
   constraint pk_laporan primary key (id))
 ;
 
