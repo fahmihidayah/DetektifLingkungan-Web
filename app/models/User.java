@@ -14,6 +14,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
@@ -57,10 +59,16 @@ public class User extends Model {
 	public List<Notif> listNotif;
 	
 	// pilih salah satu (masih dalam tahap riset)
-	@ManyToMany(cascade = CascadeType.ALL, mappedBy = "listFollowingUser")
+	@ManyToMany( mappedBy = "listFollowingUser")
+	
 	public List<User> listFollowerUser;
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
+	@JoinTable(
+			name = "USER_FOLLOW_USER",
+			joinColumns = @JoinColumn(name = "FOLLOWER_USER_ID"),
+			inverseJoinColumns = @JoinColumn(name = "FOLLOWING_USER_ID")
+			)
 	public List<User> listFollowingUser;
 	
 	public static Finder<Long, User> finder = new Finder<Long, User>(
