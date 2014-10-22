@@ -8,6 +8,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import play.db.ebean.Model;
 @Entity
 public class Notif extends Model {
@@ -16,6 +18,7 @@ public class Notif extends Model {
 	public Long id;
 	@OneToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;
+	@JsonIgnore
 	@ManyToOne(cascade = CascadeType.ALL)
 	public User user;
 	

@@ -89,5 +89,9 @@ public class RequestHandler implements Constants {
 	public Long getLongValue(String key) {
 		return Long.parseLong(result.get(key).toString());
 	}
+	
+	public Double getDoubleValue(String key){
+		return Double.parseDouble(result.get(key).toString());
+	}
 
 }

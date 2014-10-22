@@ -1,9 +1,13 @@
 package controllers;
 
+import java.util.Calendar;
+import java.util.List;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import models.Auth;
+import models.Laporan;
 import models.User;
 import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
@@ -53,5 +57,35 @@ public class BackEndUserController extends Controller {
     	user.email = requestHandler.getStringValue("email");
     	user.save();
     	return ok(JsonHandler.getSuitableResponse(user, true));
+    }
+    
+    public static Result insertLaporan(){
+    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "time"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+    	if(user == null){
+    		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
+    	}
+    	Laporan laporan = new Laporan();
+    	laporan.user = user;
+    	laporan.dataLaporan = requestHandler.getStringValue("dataLaporan");
+    	laporan.katagoriLaporan = requestHandler.getStringValue("katagoriLaporan");
+    	laporan.longitude = requestHandler.getDoubleValue("longitude");
+    	laporan.latitude = requestHandler.getDoubleValue("latitude");
+    	laporan.time = Calendar.getInstance();
+    	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
+    }
+    
+    public static Result listLaporan(){
+    	List<Laporan> listLaporan = Laporan.finder.all();
+    	return ok(JsonHandler.getSuitableResponse(listLaporan, true));
+    }
+    
+    public static Result filterLaporan(){
+    	return ok();
     }
 }
