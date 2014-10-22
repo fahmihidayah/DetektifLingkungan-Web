@@ -47,7 +47,7 @@ public class User extends Model {
 	public String password;
 	
 	@Column
-	public String type;
+	public String type = "PEMANTAU";
 	@Column
 	public String name;
 	@Column
