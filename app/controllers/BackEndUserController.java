@@ -20,7 +20,7 @@ import views.html.*;
  * 
  * @author fahmi
  * catatan :
- * untuk perubahan data pada laporan seperti tanggapan komentar dsb
+ * untuk perubahan data pada laporan seperti tanggapan komentar dsb.
  */
 public class BackEndUserController extends Controller {
 	public static Form<User> frmUser = Form.form(User.class);
