@@ -52,22 +52,25 @@ public class User extends Model {
 	public String name;
 	@Column
 	public String email;
-	
+	@Column
+	public String status = "i'm a detective";
+	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	public List<Laporan> listPantauLaporan;
+	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Notif> listNotif;
 	
 	// pilih salah satu (masih dalam tahap riset)
+	@JsonIgnore
 	@ManyToMany( mappedBy = "listFollowingUser")
-	
 	public List<User> listFollowerUser;
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(
-			name = "USER_FOLLOW_USER",
-			joinColumns = @JoinColumn(name = "FOLLOWER_USER_ID"),
-			inverseJoinColumns = @JoinColumn(name = "FOLLOWING_USER_ID")
+			name = "user_follow_user",
+			joinColumns = @JoinColumn(name = "follower_user_id"),
+			inverseJoinColumns = @JoinColumn(name = "following_user_id")
 			)
 	public List<User> listFollowingUser;
 	

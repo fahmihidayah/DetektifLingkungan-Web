@@ -44,6 +44,19 @@ public class BackEndUserController extends Controller {
     	return ok(JsonHandler.getSuitableResponse(data, true));
     }
 
+    public static Result logout(){
+    	String key[] = {"authKey"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	
+    	Auth auth = Auth.findAuth(requestHandler.getStringValue("authKey"));
+    	auth.delete();
+    	return ok(JsonHandler.getSuitableResponse("logout", true));
+    }
+    
     public static Result registerUser(){
     	String key[] = {"name", "userName", "password", "email"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
