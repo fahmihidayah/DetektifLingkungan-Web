@@ -16,7 +16,12 @@ import play.data.Form;
 import play.libs.Json;
 import play.mvc.*;
 import views.html.*;
-
+/**
+ * 
+ * @author fahmi
+ * catatan :
+ * untuk perubahan data pada laporan seperti tanggapan komentar dsb
+ */
 public class BackEndUserController extends Controller {
 	public static Form<User> frmUser = Form.form(User.class);
     public static Result index() {
@@ -28,11 +33,13 @@ public class BackEndUserController extends Controller {
     	RequestHandler requestHandler = new RequestHandler(frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
+    		System.out.println("error 1");
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	User user = Auth.findUser(requestHandler.getStringValue("userName"),
     			requestHandler.getStringValue("password"));
     	if(user == null){
+    		System.out.println("error 2");
     		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
     	}
     	Auth auth = new Auth();
@@ -73,7 +80,7 @@ public class BackEndUserController extends Controller {
     }
     
     public static Result insertLaporan(){
-    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "time"};
+    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude"/*, "time"*/};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
@@ -90,9 +97,13 @@ public class BackEndUserController extends Controller {
     	laporan.longitude = requestHandler.getDoubleValue("longitude");
     	laporan.latitude = requestHandler.getDoubleValue("latitude");
     	laporan.time = Calendar.getInstance();
+    	laporan.save();
     	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
     }
-    
+    /*
+     * kekurangan - kurang difilter perbagian untuk diambil.
+     * contoh 10 item terupdate berdasarkan tanggal.
+     */
     public static Result listLaporan(){
     	List<Laporan> listLaporan = Laporan.finder.all();
     	return ok(JsonHandler.getSuitableResponse(listLaporan, true));

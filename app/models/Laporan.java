@@ -1,5 +1,6 @@
 package models;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -28,11 +29,16 @@ public class Laporan extends Model {
 	public Tanggapan tanggapan;
 	@OneToOne(cascade = CascadeType.ALL)
 	public User user;
+	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL)
-	public List<Komentar> listKomentar;
+	public List<Komentar> listKomentar = new ArrayList<>();
 	@JsonIgnore
 	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL)
-	public List<User> listUserPemantau;
+	public List<User> listUserPemantau = new ArrayList<>();
+	@Column 
+	public Integer jumlahKomentar = 0;
+	@Column 
+	public Integer jumlahUserPemantau = 0;
 	@Column
 	public String katagoriLaporan;
 	@Column
@@ -44,4 +50,23 @@ public class Laporan extends Model {
 	
 	public static Finder<Long, Laporan> finder = new Finder<>(Long.class, Laporan.class);
 
+	public void tambahKomentar(Komentar komentar){
+		listKomentar.add(komentar);
+		jumlahKomentar = listKomentar.size();
+	}
+	
+	public void hapusKomentar(Komentar komentar){
+		listKomentar.remove(komentar);
+		jumlahKomentar = listKomentar.size();
+	}
+	
+	public void tambahUserPemantau(User user){
+		listUserPemantau.add(user);
+		jumlahUserPemantau = listUserPemantau.size();
+	}
+	
+	public void hapusUserPemantau(User user){
+		listUserPemantau.remove(user);
+		jumlahUserPemantau = listUserPemantau.size();
+	}
 }

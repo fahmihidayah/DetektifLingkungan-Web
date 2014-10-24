@@ -22,6 +22,8 @@ create table laporan (
   data_laporan              varchar(255),
   tanggapan_id              bigint,
   user_id                   bigint,
+  jumlah_komentar           integer,
+  jumlah_user_pemantau      integer,
   katagori_laporan          varchar(255),
   longitude                 double,
   latitude                  double,
@@ -52,6 +54,8 @@ create table user (
   name                      varchar(255),
   email                     varchar(255),
   status                    varchar(255),
+  jumlah_follower_user      integer,
+  jumlah_following_user     integer,
   constraint uq_user_user_name unique (user_name),
   constraint pk_user primary key (id))
 ;

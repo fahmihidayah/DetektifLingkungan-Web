@@ -74,6 +74,31 @@ public class User extends Model {
 			)
 	public List<User> listFollowingUser;
 	
+	@Column
+	public Integer jumlahFollowerUser = 0;
+	@Column
+	public Integer jumlahFollowingUser = 0;
+	
+	public void tambahFollowerUser(User user){
+		listFollowerUser.add(user);
+		jumlahFollowerUser = listFollowerUser.size();
+	}
+	
+	public void tambahFollowingUser(User user){
+		listFollowingUser.add(user);
+		jumlahFollowingUser = listFollowingUser.size();
+	}
+	
+	public void hapusFollowerUser(User user){
+		listFollowerUser.remove(user);
+		jumlahFollowerUser = listFollowerUser.size();
+	}
+	
+	public void hapusFollowingUser(User user){
+		listFollowingUser.remove(user);
+		jumlahFollowingUser = listFollowingUser.size();
+	}
+	
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);
 
