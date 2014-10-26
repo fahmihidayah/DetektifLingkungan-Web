@@ -5,6 +5,7 @@ public interface Constants {
 	public static String AUTH_NOT_FOUND = "require auth key";
 	public static String USER_NOT_FOUND = "You're not login yet";
 	public static String SUCCESS = "OK";
-	public static String AUTH_KEY = "auth_key";
+	public static String AUTH_KEY = "authKey";
 	
+	public static String DATE_FROMAT = "EEEE, MMM dd, yyyy HH:mm:ss a";
 }

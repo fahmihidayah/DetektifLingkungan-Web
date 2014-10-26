@@ -9,6 +9,11 @@ import play.data.Form;
 public class RequestHandler implements Constants {
 	private boolean checkAuth = false;
 	private Form form;
+	/**
+	 * ini diganti dengan map. format :
+	 * map.put("key-atau-field", "1-atau-0");
+	 * 1 wajib diisi 0 optional
+	 */
 	private String[] arrayKey;
 	private Map<String, Object> result = null;
 
@@ -92,6 +97,10 @@ public class RequestHandler implements Constants {
 	
 	public Double getDoubleValue(String key){
 		return Double.parseDouble(result.get(key).toString());
+	}
+	
+	public String getOptionalStringValue(String key){
+		return form.data().get(key).toString();
 	}
 
 }

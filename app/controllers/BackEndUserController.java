@@ -1,14 +1,18 @@
 package controllers;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
+import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import models.Auth;
 import models.Laporan;
 import models.User;
+import fahmi.lib.Constants;
 import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
 import play.*;
@@ -22,7 +26,7 @@ import views.html.*;
  * catatan :
  * untuk perubahan data pada laporan seperti tanggapan komentar dsb.
  */
-public class BackEndUserController extends Controller {
+public class BackEndUserController extends Controller implements Constants {
 	public static Form<User> frmUser = Form.form(User.class);
     public static Result index() {
         return ok(index.render("Your new application is ready."));
@@ -81,7 +85,7 @@ public class BackEndUserController extends Controller {
     
     public static Result insertLaporan(){
     	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude"/*, "time"*/};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
@@ -109,7 +113,40 @@ public class BackEndUserController extends Controller {
     	return ok(JsonHandler.getSuitableResponse(listLaporan, true));
     }
     
-    public static Result filterLaporan(){
+    public static Result tambahKomentar(){
+    	
     	return ok();
+    }
+    
+    public static Result fetchUpdateLaporan(){
+    	String key[] = {"idLaporan"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	requestHandler.checkError();
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FROMAT);
+    	List<Laporan> listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
+    }
+    
+    public static Result fetchCurrentLaporan(){
+    	return ok();
+    }
+    
+    public static Result test(){
+    	String key[] = {"idLaporan"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	requestHandler.checkError();
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FROMAT);
+    	List<Laporan> listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
     }
 }

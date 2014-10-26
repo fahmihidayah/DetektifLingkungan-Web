@@ -12,5 +12,7 @@ POST	/api/register				controllers.BackEndUserController.registerUser()
 POST	/api/insert_laporan			controllers.BackEndUserController.insertLaporan()
 POST	/api/list_laporan			controllers.BackEndUserController.listLaporan()
 POST	/api/logout					controllers.BackEndUserController.logout()
+
+POST	/test						controllers.BackEndUserController.test()
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
