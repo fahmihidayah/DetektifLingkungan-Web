@@ -118,23 +118,28 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok();
     }
     
-    public static Result fetchUpdateLaporan(){
-    	String key[] = {"idLaporan"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    public static Result getListLaporan(){
+    	String key[] = {"idLaporan", "type"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	requestHandler.checkError();
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FROMAT);
-    	List<Laporan> listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    	String type = requestHandler.getStringValue("type");
+    	List<Laporan> listUpdateLaporan; 
+    	
+    	if(type.equalsIgnoreCase("h")){
+    		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    	}
+    	else {
+    		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
+    	}
     	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
     }
     
-    public static Result fetchCurrentLaporan(){
-    	return ok();
-    }
+    
     
     public static Result test(){
     	String key[] = {"idLaporan"};
@@ -145,8 +150,7 @@ public class BackEndUserController extends Controller implements Constants {
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FROMAT);
-    	List<Laporan> listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    	List<Laporan> listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
     	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
     }
 }
