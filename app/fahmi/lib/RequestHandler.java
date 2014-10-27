@@ -34,7 +34,7 @@ public class RequestHandler implements Constants {
 	public RequestHandler(boolean checkAuth, Form form) {
 		super();
 		this.checkAuth = checkAuth;
-		this.form = form;
+		this.form = form.bindFromRequest();
 	}
 
 	public String findAuth(Map map) {
@@ -102,5 +102,7 @@ public class RequestHandler implements Constants {
 	public String getOptionalStringValue(String key){
 		return form.data().get(key).toString();
 	}
-
+	public Long getOptionalLongValue(String key){
+		return Long.parseLong(form.data().get(key).toString());
+	}
 }

@@ -117,26 +117,74 @@ public class BackEndUserController extends Controller implements Constants {
     	
     	return ok();
     }
-    
+    /**
+     * type h, l, f
+     * @return
+     */
     public static Result getListLaporan(){
-    	String key[] = {"idLaporan", "type"};
+    	String key[] = {"idUser","type"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	requestHandler.checkError();
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
     	String type = requestHandler.getStringValue("type");
-    	List<Laporan> listUpdateLaporan; 
+    	Laporan laporan = null;
+    	if(!type.equalsIgnoreCase("f")){
+    		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("idLaporan"));
+    		if(laporan == null){
+    			return badRequest(JsonHandler.getSuitableResponse("laporan not found", false));
+    		}
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	
+    	List<Laporan> listUpdateLaporan = null; 
     	
     	if(type.equalsIgnoreCase("h")){
     		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
     	}
-    	else {
+    	else if (type.equalsIgnoreCase("l")){
     		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
     	}
+    	else {
+    		listUpdateLaporan = Laporan.finder.where().order("time desc").setMaxRows(5).findList();
+    	}
+    	
+    	for (Laporan eLaporan : listUpdateLaporan) {
+			if(eLaporan.listUserPemantau.contains(user)){
+				eLaporan.pantau = true;
+			}
+		}
+    	
     	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
+    }
+    
+    public static Result pantau(){
+    	String key[] = {"idUser", "idLaporan"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	laporan.tambahUserPemantau(userPemantau);
+    	laporan.update();
+    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
+    }
+    public static Result unpantau(){
+    	String key[] = {"idUser", "idLaporan"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	laporan.hapusUserPemantau(userPemantau);
+    	laporan.update();
+    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
     }
     
     
@@ -145,12 +193,13 @@ public class BackEndUserController extends Controller implements Constants {
     	String key[] = {"idLaporan"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
     	requestHandler.setArrayKey(key);
-    	requestHandler.checkError();
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	List<Laporan> listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
-    	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
+    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	laporan.tambahUserPemantau(userPemantau);
+    	laporan.update();
+    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
     }
 }

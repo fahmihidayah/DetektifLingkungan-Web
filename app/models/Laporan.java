@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -47,6 +48,9 @@ public class Laporan extends Model {
 	public Double latitude;
 	@Column
 	public Calendar time;
+	
+	@Transient
+	public boolean pantau = false;
 	
 	public static Finder<Long, Laporan> finder = new Finder<>(Long.class, Laporan.class);
 
