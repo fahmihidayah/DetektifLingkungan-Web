@@ -9,7 +9,9 @@ import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import model_helper.UserHelper;
 import models.Auth;
+import models.Komentar;
 import models.Laporan;
 import models.User;
 import fahmi.lib.Constants;
@@ -188,18 +190,123 @@ public class BackEndUserController extends Controller implements Constants {
     }
     
     
-    
-    public static Result test(){
+    public static Result listKomentar(){
     	String key[] = {"idLaporan"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
-    	laporan.tambahUserPemantau(userPemantau);
-    	laporan.update();
-    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
+    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan.id", requestHandler.getStringValue("idLaporan")).findList();
+    	return ok(JsonHandler.getSuitableResponse(listKomentar, true));
+    }
+    
+    public static Result insertKomentar(){
+    	String key[] = {"idLaporan", "dataKomentar", "idUser"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	Komentar komentar = new Komentar();
+    	komentar.user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	komentar.dataKomentar = requestHandler.getStringValue("dataKomentar");
+    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	komentar.laporan.tambahKomentar(komentar);
+    	komentar.laporan.update();
+    	return ok(JsonHandler.getSuitableResponse(komentar, true));
+    }
+    
+    public static Result getUserProfile(){
+    	String key[] = {"idUser","idUserFollower"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User userFollower = User.finder.byId(requestHandler.getLongValue("idUserFollower"));
+    	if(user == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	UserHelper helper = new UserHelper();
+    	helper.id = user.id;
+    	helper.email = user.email;
+    	helper.isFollowing = user.listFollowerUser.contains(userFollower);
+    	helper.jumlahFollowerUser = user.jumlahFollowerUser;
+    	helper.jumlahFollowingUser = user.jumlahFollowingUser;
+    	helper.name = user.name;
+    	helper.password = user.password;
+    	helper.status = user.status;
+    	helper.type = user.type;
+    	helper.userName = user.userName;
+    	return ok(JsonHandler.getSuitableResponse(helper, true));
+    }
+    
+    public static Result follow(){
+    	String key[] = {"idUser", "idUserFollow"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
+    	if(user == null || userFollow == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	userFollow.tambahFollowerUser(user);
+    	userFollow.update();
+    	return ok(JsonHandler.getSuitableResponse("success follow", true));
+    }
+    
+    public static Result unfollow(){
+    	String key[] = {"idUser", "idUserFollow"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
+    	if(user == null || userFollow == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	userFollow.hapusFollowerUser(user);
+    	userFollow.update();
+    	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
+    }
+    
+    public static Result changeStatus(){
+    	String key[] = {"idUser", "status"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	if(user == null ){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	user.status = requestHandler.getStringValue("status");
+    	user.update();
+    	return ok(JsonHandler.getSuitableResponse("success update status", true));
+    }
+    
+    public static Result test(){
+//    	String key[] = {"idUser", "idUserFollow"};
+//    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+//    	requestHandler.setArrayKey(key);
+//    	if(requestHandler.isContainError()){
+//    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+//    	}
+//    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+//    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
+//    	if(user == null || userFollow == null){
+//    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+//    	}
+//    	userFollow.tambahFollowerUser(user);
+//    	return ok(JsonHandler.getSuitableResponse(user, true));
+    	return ok();
     }
 }

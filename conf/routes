@@ -15,6 +15,12 @@ POST	/api/logout					controllers.BackEndUserController.logout()
 POST	/api/get_list_laporan		controllers.BackEndUserController.getListLaporan()
 POST	/api/pantau					controllers.BackEndUserController.pantau() 
 POST	/api/unpantau				controllers.BackEndUserController.unpantau()
+POST	/api/list_komentar			controllers.BackEndUserController.listKomentar()
+POST	/api/insert_komentar		controllers.BackEndUserController.insertKomentar()
+POST	/api/user_detail			controllers.BackEndUserController.getUserProfile()
+POST	/api/follow					controllers.BackEndUserController.follow()
+POST	/api/unfollow				controllers.BackEndUserController.unfollow()
+POST	/api/update_status			controllers.BackEndUserController.changeStatus()
 
 POST	/test						controllers.BackEndUserController.test()
 # Map static resources from the /public folder to the /assets URL path
