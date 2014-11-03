@@ -103,6 +103,10 @@ public class RequestHandler implements Constants {
 		return form.data().get(key).toString();
 	}
 	public Long getOptionalLongValue(String key){
-		return Long.parseLong(form.data().get(key).toString());
+		String data = form.data().get(key).toString();
+		if(data == null){
+			return new Long(-1);
+		}
+		return Long.parseLong(data);
 	}
 }

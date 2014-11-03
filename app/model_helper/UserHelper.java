@@ -1,4 +1,7 @@
 package model_helper;
+
+import models.ImagePath;
+
 /*
  * id: 1
 userName: "f"
@@ -22,5 +25,6 @@ public class UserHelper {
 	public Integer jumlahFollowerUser;
 	public Integer jumlahFollowingUser;
 	public boolean isFollowing;
+	public ImagePath imageProfilePath;
 
 }

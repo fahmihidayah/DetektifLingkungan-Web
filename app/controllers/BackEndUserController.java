@@ -1,18 +1,23 @@
 package controllers;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.UUID;
 
 import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.ning.http.client.Request;
 
 import model_helper.UserHelper;
 import models.Auth;
+import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
+import models.ServerAddress;
 import models.User;
 import fahmi.lib.Constants;
 import fahmi.lib.JsonHandler;
@@ -21,6 +26,8 @@ import play.*;
 import play.data.Form;
 import play.libs.Json;
 import play.mvc.*;
+import play.mvc.Http.MultipartFormData;
+import play.mvc.Http.MultipartFormData.FilePart;
 import views.html.*;
 /**
  * 
@@ -81,6 +88,7 @@ public class BackEndUserController extends Controller implements Constants {
     			requestHandler.getStringValue("password"));
     	user.name = requestHandler.getStringValue("name");
     	user.email = requestHandler.getStringValue("email");
+    	user.imageProfilePath = ImagePath.finder.where().eq("keterangan", IM_DEFAULT_PROFILE).findUnique();
     	user.save();
     	return ok(JsonHandler.getSuitableResponse(user, true));
     }
@@ -92,6 +100,16 @@ public class BackEndUserController extends Controller implements Constants {
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
+    	
+    	String filePath = uploadFile("picture");
+    	if(filePath.equalsIgnoreCase(ERROR)){
+    		return badRequest(JsonHandler.getSuitableResponse("require datas", false));
+    	}
+    	
+    	ImagePath imagePath = new ImagePath();
+    	imagePath.keterangan = IM_LAPORAN;
+    	imagePath.path = filePath;
+    	imagePath.save();
     	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
@@ -103,6 +121,7 @@ public class BackEndUserController extends Controller implements Constants {
     	laporan.longitude = requestHandler.getDoubleValue("longitude");
     	laporan.latitude = requestHandler.getDoubleValue("latitude");
     	laporan.time = Calendar.getInstance();
+    	laporan.imagePath = imagePath;
     	laporan.save();
     	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
     }
@@ -240,6 +259,7 @@ public class BackEndUserController extends Controller implements Constants {
     	helper.status = user.status;
     	helper.type = user.type;
     	helper.userName = user.userName;
+    	helper.imageProfilePath = user.imageProfilePath;    
     	return ok(JsonHandler.getSuitableResponse(helper, true));
     }
     
@@ -256,7 +276,9 @@ public class BackEndUserController extends Controller implements Constants {
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
     	userFollow.tambahFollowerUser(user);
+    	user.tambahFollowingUser(userFollow);
     	userFollow.update();
+    	user.update();
     	return ok(JsonHandler.getSuitableResponse("success follow", true));
     }
     
@@ -274,6 +296,8 @@ public class BackEndUserController extends Controller implements Constants {
     	}
     	userFollow.hapusFollowerUser(user);
     	userFollow.update();
+    	user.hapusFollowingUser(userFollow);
+    	user.update();
     	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
     }
     
@@ -293,6 +317,11 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok(JsonHandler.getSuitableResponse("success update status", true));
     }
     
+    public static Result changeUserPhoto(){
+    	return ok();
+    }
+    
+    
     public static Result test(){
 //    	String key[] = {"idUser", "idUserFollow"};
 //    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
@@ -309,4 +338,45 @@ public class BackEndUserController extends Controller implements Constants {
 //    	return ok(JsonHandler.getSuitableResponse(user, true));
     	return ok();
     }
+    
+    public static String uploadFile(String key){
+    	MultipartFormData body = request().body().asMultipartFormData();
+		FilePart picture = body.getFile(key);
+		if (picture != null) {
+			String fileName = picture.getFilename();
+			fileName = UUID.randomUUID().toString().replace("-", "_");
+			String contentType = picture.getContentType();
+			File file = picture.getFile();
+			file.renameTo(new File(Play.application().configuration()
+					.getString("myUploadPath"), fileName));
+			ServerAddress address = ServerAddress.finder.byId(new Long(1));
+			return UPLOADS_FOLDER + fileName;
+		} else {
+			flash("error", "Missing file");
+			return ERROR;
+		}
+    }
+    
+    public static Result uploadImageExample(){
+    	String image = uploadFile("picture");
+    	if(image.equalsIgnoreCase(ERROR)){
+    		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
+    	}
+    	ImagePath imagePath = new ImagePath();
+    	imagePath.path = image;
+    	imagePath.save();
+    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
+    }
+    
+    public static Result uploadImageLaporanExample(){
+    	String image = uploadFile("picture");
+    	if(image.equalsIgnoreCase(ERROR)){
+    		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
+    	}
+    	ImagePath imagePath = new ImagePath();
+    	imagePath.path = image;
+    	imagePath.save();
+    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
+    }
+    
 }

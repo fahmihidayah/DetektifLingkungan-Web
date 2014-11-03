@@ -18,6 +18,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Transient;
 import javax.validation.Constraint;
 
@@ -78,6 +79,9 @@ public class User extends Model {
 	public Integer jumlahFollowerUser = 0;
 	@Column
 	public Integer jumlahFollowingUser = 0;
+	
+	@OneToOne(cascade = CascadeType.ALL)
+	public ImagePath imageProfilePath;
 	
 	public void tambahFollowerUser(User user){
 		listFollowerUser.add(user);

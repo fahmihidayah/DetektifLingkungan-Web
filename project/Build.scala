@@ -13,6 +13,7 @@ object ApplicationBuild extends Build {
 //      "org.apache.derby" % "derby" % "10.4.1.3" % "test"
       "mysql" % "mysql-connector-java" % "5.1.18",
       "com.google.code.gson" % "gson" % "2.2.4"
+    // "org.apache.directory.studio" % "org.apache.commons.io" % "2.4"
     )
 
     val main = play.Project(appName, appVersion, appDependencies).settings(defaultScalaSettings: _*).settings(

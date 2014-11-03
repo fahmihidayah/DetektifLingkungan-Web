@@ -48,6 +48,8 @@ public class Laporan extends Model {
 	public Double latitude;
 	@Column
 	public Calendar time;
+	@OneToOne(cascade = CascadeType.ALL)
+	public ImagePath imagePath;
 	
 	@Transient
 	public boolean pantau = false;

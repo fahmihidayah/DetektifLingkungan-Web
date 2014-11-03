@@ -18,7 +18,8 @@ public class Tanggapan extends Model {
 	public String dataTanggapan;
 	@OneToOne(cascade = CascadeType.ALL)
 	public User user;
-	
+	@OneToOne(cascade = CascadeType.ALL)
+	public ImagePath imagePath;
 	public static Finder<Long, Tanggapan> finder = new Finder<>(Long.class, Tanggapan.class);
 
 }
