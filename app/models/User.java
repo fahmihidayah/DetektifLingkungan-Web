@@ -3,6 +3,7 @@ package models;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -57,15 +58,15 @@ public class User extends Model {
 	public String status = "i'm a detective";
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
-	public List<Laporan> listPantauLaporan;
+	public List<Laporan> listPantauLaporan ;
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL)
-	public List<Notif> listNotif;
+	public List<Notif> listNotif = new ArrayList<Notif>();
 	
 	// pilih salah satu (masih dalam tahap riset)
 	@JsonIgnore
 	@ManyToMany( mappedBy = "listFollowingUser")
-	public List<User> listFollowerUser;
+	public List<User> listFollowerUser = new ArrayList<User>();
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(
@@ -73,7 +74,7 @@ public class User extends Model {
 			joinColumns = @JoinColumn(name = "follower_user_id"),
 			inverseJoinColumns = @JoinColumn(name = "following_user_id")
 			)
-	public List<User> listFollowingUser;
+	public List<User> listFollowingUser = new ArrayList<User>();
 	
 	@Column
 	public Integer jumlahFollowerUser = 0;

@@ -22,8 +22,13 @@ POST	/api/follow					controllers.BackEndUserController.follow()
 POST	/api/unfollow				controllers.BackEndUserController.unfollow()
 POST	/api/update_status			controllers.BackEndUserController.changeStatus()
 POST	/api/test_upload			controllers.TestController.upload()
+POST	/api/change_profile_pict	controllers.BackEndUserController.changeProfilePicture()
+POST	/api/get_follower			controllers.BackEndUserController.getFollower()
 POST	/test						controllers.BackEndUserController.test()
+POST	/api/test/delete_image		controllers.BackEndUserController.deleteImage()
+POST	/api/test/insert_image		controllers.BackEndUserController.insertImage()
 
+POST	/api/view					controllers.BackEndUserController.viewLaporan()
 POST	/api/change_server			controllers.ServerController.changeServerAddress()
 POST	/api/set_server				controllers.ServerController.setserver()
 

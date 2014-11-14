@@ -11,5 +11,8 @@ public interface Constants {
 	
 	public static String IM_DEFAULT_PROFILE = "default profile";
 	public static String IM_LAPORAN	= "image laporan";
+	public static String IM_MODIFED = "modifed profile";
+	
+	public static String PATH_IMAGE = "myUploadPath";
 	public static String DATE_FROMAT = "EEEE, MMM dd, yyyy HH:mm:ss a";
 }

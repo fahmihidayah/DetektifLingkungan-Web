@@ -12,6 +12,7 @@ create table auth (
 create table image_path (
   id                        bigint auto_increment not null,
   path                      varchar(255),
+  file_name                 varchar(255),
   keterangan                varchar(255),
   constraint pk_image_path primary key (id))
 ;
@@ -37,6 +38,7 @@ create table laporan (
   latitude                  double,
   time                      datetime,
   image_path_id             bigint,
+  viwer                     bigint,
   constraint pk_laporan primary key (id))
 ;
 

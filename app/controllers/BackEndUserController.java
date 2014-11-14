@@ -1,6 +1,7 @@
 package controllers;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -101,14 +102,12 @@ public class BackEndUserController extends Controller implements Constants {
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	
-    	String filePath = uploadFile("picture");
-    	if(filePath.equalsIgnoreCase(ERROR)){
+    	ImagePath imagePath = uploadFile("picture");
+    	if(imagePath == null){
     		return badRequest(JsonHandler.getSuitableResponse("require datas", false));
     	}
     	
-    	ImagePath imagePath = new ImagePath();
     	imagePath.keterangan = IM_LAPORAN;
-    	imagePath.path = filePath;
     	imagePath.save();
     	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	if(user == null){
@@ -152,7 +151,7 @@ public class BackEndUserController extends Controller implements Constants {
     	}
     	String type = requestHandler.getStringValue("type");
     	Laporan laporan = null;
-    	if(!type.equalsIgnoreCase("f")){
+    	if(type.equalsIgnoreCase("h") && type.equalsIgnoreCase("l")){
     		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("idLaporan"));
     		if(laporan == null){
     			return badRequest(JsonHandler.getSuitableResponse("laporan not found", false));
@@ -168,8 +167,11 @@ public class BackEndUserController extends Controller implements Constants {
     	else if (type.equalsIgnoreCase("l")){
     		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
     	}
+    	else if(type.equalsIgnoreCase("o")){
+    		listUpdateLaporan = Laporan.finder.where().eq("user_id", requestHandler.getLongValue("idUser") + "").order("time desc").setMaxRows(5).findList();
+    	}
     	else {
-    		listUpdateLaporan = Laporan.finder.where().order("time desc").setMaxRows(5).findList();
+    		listUpdateLaporan = Laporan.finder.where().order("time desc")/*.setMaxRows(5)*/.findList();
     	}
     	
     	for (Laporan eLaporan : listUpdateLaporan) {
@@ -192,7 +194,8 @@ public class BackEndUserController extends Controller implements Constants {
     	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
     	laporan.tambahUserPemantau(userPemantau);
     	laporan.update();
-    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
+    	laporan.pantau = true;
+    	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
     public static Result unpantau(){
     	String key[] = {"idUser", "idLaporan"};
@@ -204,8 +207,9 @@ public class BackEndUserController extends Controller implements Constants {
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
     	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
     	laporan.hapusUserPemantau(userPemantau);
-    	laporan.update();
-    	return ok(JsonHandler.getSuitableResponse("laporan dipantau", true));
+    	Ebean.save(laporan);
+    	laporan.pantau = false;
+    	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
     
     
@@ -278,7 +282,7 @@ public class BackEndUserController extends Controller implements Constants {
     	userFollow.tambahFollowerUser(user);
     	user.tambahFollowingUser(userFollow);
     	userFollow.update();
-    	user.update();
+//    	user.update();
     	return ok(JsonHandler.getSuitableResponse("success follow", true));
     }
     
@@ -317,10 +321,6 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok(JsonHandler.getSuitableResponse("success update status", true));
     }
     
-    public static Result changeUserPhoto(){
-    	return ok();
-    }
-    
     
     public static Result test(){
 //    	String key[] = {"idUser", "idUserFollow"};
@@ -339,7 +339,12 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok();
     }
     
-    public static String uploadFile(String key){
+    /**
+     * bisa di jadikan framework
+     * @param key
+     * @return
+     */
+    public static ImagePath uploadFile(String key){
     	MultipartFormData body = request().body().asMultipartFormData();
 		FilePart picture = body.getFile(key);
 		if (picture != null) {
@@ -348,35 +353,118 @@ public class BackEndUserController extends Controller implements Constants {
 			String contentType = picture.getContentType();
 			File file = picture.getFile();
 			file.renameTo(new File(Play.application().configuration()
-					.getString("myUploadPath"), fileName));
+					.getString(PATH_IMAGE), fileName));
 			ServerAddress address = ServerAddress.finder.byId(new Long(1));
-			return UPLOADS_FOLDER + fileName;
+			ImagePath imagePath = new ImagePath();
+			imagePath.fileName = fileName;
+			imagePath.path = UPLOADS_FOLDER + fileName;
+			return imagePath;
 		} else {
+			
 			flash("error", "Missing file");
-			return ERROR;
+			return null;
 		}
     }
     
+    public static Result deleteImage(){
+    	String [] key = {"idImage"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	String statusResponse = ImagePath.deleteImageByid(requestHandler.getLongValue("idImage"));
+    	return ok(JsonHandler.getSuitableResponse(statusResponse, true));
+    }
+    
+    public static Result insertImage(){
+    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+    	if(imagePath == null){
+    		return badRequest(JsonHandler.getSuitableResponse("error insert image", false));
+    	}
+    	imagePath.save();
+    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
+    }
+    
+    
     public static Result uploadImageExample(){
-    	String image = uploadFile("picture");
-    	if(image.equalsIgnoreCase(ERROR)){
+    	ImagePath imagePath = uploadFile("picture");
+    	if(imagePath == null){
     		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
     	}
-    	ImagePath imagePath = new ImagePath();
-    	imagePath.path = image;
     	imagePath.save();
     	return ok(JsonHandler.getSuitableResponse(imagePath, true));
     }
     
     public static Result uploadImageLaporanExample(){
-    	String image = uploadFile("picture");
-    	if(image.equalsIgnoreCase(ERROR)){
+    	ImagePath imagePath = uploadFile("picture");
+    	if(imagePath == null){
     		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
     	}
-    	ImagePath imagePath = new ImagePath();
-    	imagePath.path = image;
     	imagePath.save();
     	return ok(JsonHandler.getSuitableResponse(imagePath, true));
     }
+    
+    public static Result changeProfilePicture(){
+    	String [] key = {"idUser"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+//    	return ok(JsonHandler.getSuitableResponse(user, true));
+    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+    	if(imagePath == null){
+    		return badRequest(JsonHandler.getSuitableResponse("require image", false));
+    	}
+    	if(!user.imageProfilePath.keterangan.equalsIgnoreCase(IM_DEFAULT_PROFILE)){
+    		ImagePath.deleteImage(user.imageProfilePath);
+    	}
+    	imagePath.keterangan = IM_MODIFED;
+    	imagePath.save();
+    	user.imageProfilePath = imagePath;
+    	user.update();
+    	return ok(JsonHandler.getSuitableResponse(user, true));
+    }
+    
+    /**
+     * mode 0 = follower
+     * mode 1 = following
+     * @return
+     */
+    public static Result getFollower(){
+    	String key[] = {"idUser", "mode"};
+    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	String mode = requestHandler.getStringValue("mode");
+    	if(user == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	if(mode.equalsIgnoreCase("follower")){
+    		return ok(JsonHandler.getSuitableResponse(user.listFollowerUser, true));	
+    	}
+    	else {
+    		return ok(JsonHandler.getSuitableResponse(user.listFollowingUser, true)); 
+    	}
+    }
+    
+    
+    public static Result viewLaporan(){
+    	String key[] = {"idLaporan"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return ok(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(),false));
+    	}
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
+    	return ok(JsonHandler.getSuitableResponse("success add view", true));
+    }
+    
     
 }

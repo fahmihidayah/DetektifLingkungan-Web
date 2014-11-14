@@ -1,5 +1,6 @@
 package models;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -35,7 +36,7 @@ public class Laporan extends Model {
 	public List<Komentar> listKomentar = new ArrayList<>();
 	@JsonIgnore
 	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL)
-	public List<User> listUserPemantau = new ArrayList<>();
+	public List<User> listUserPemantau ;
 	@Column 
 	public Integer jumlahKomentar = 0;
 	@Column 
@@ -50,6 +51,9 @@ public class Laporan extends Model {
 	public Calendar time;
 	@OneToOne(cascade = CascadeType.ALL)
 	public ImagePath imagePath;
+	
+	@Column
+	public BigInteger viwer = new BigInteger("0");
 	
 	@Transient
 	public boolean pantau = false;
@@ -68,11 +72,15 @@ public class Laporan extends Model {
 	
 	public void tambahUserPemantau(User user){
 		listUserPemantau.add(user);
+		
 		jumlahUserPemantau = listUserPemantau.size();
 	}
 	
 	public void hapusUserPemantau(User user){
 		listUserPemantau.remove(user);
+		user.listPantauLaporan.remove(this);
+		user.save();
+		System.out.println(user.listPantauLaporan.size());
 		jumlahUserPemantau = listUserPemantau.size();
 	}
 }
