@@ -14,6 +14,7 @@ create table image_path (
   path                      varchar(255),
   file_name                 varchar(255),
   keterangan                varchar(255),
+  laporan_id                bigint,
   constraint pk_image_path primary key (id))
 ;
 
@@ -22,12 +23,12 @@ create table komentar (
   data_komentar             varchar(255),
   user_id                   bigint,
   laporan_id                bigint,
-  image_path_id             bigint,
   constraint pk_komentar primary key (id))
 ;
 
 create table laporan (
   id                        bigint auto_increment not null,
+  judul_laporan             varchar(255),
   data_laporan              varchar(255),
   tanggapan_id              bigint,
   user_id                   bigint,
@@ -37,7 +38,6 @@ create table laporan (
   longitude                 double,
   latitude                  double,
   time                      datetime,
-  image_path_id             bigint,
   viwer                     bigint,
   constraint pk_laporan primary key (id))
 ;
@@ -45,6 +45,7 @@ create table laporan (
 create table notif (
   id                        bigint auto_increment not null,
   laporan_id                bigint,
+  time                      datetime,
   user_id                   bigint,
   constraint pk_notif primary key (id))
 ;
@@ -91,28 +92,26 @@ create table user_follow_user (
   following_user_id              bigint not null,
   constraint pk_user_follow_user primary key (follower_user_id, following_user_id))
 ;
-alter table komentar add constraint fk_komentar_user_1 foreign key (user_id) references user (id) on delete restrict on update restrict;
-create index ix_komentar_user_1 on komentar (user_id);
-alter table komentar add constraint fk_komentar_laporan_2 foreign key (laporan_id) references laporan (id) on delete restrict on update restrict;
-create index ix_komentar_laporan_2 on komentar (laporan_id);
-alter table komentar add constraint fk_komentar_imagePath_3 foreign key (image_path_id) references image_path (id) on delete restrict on update restrict;
-create index ix_komentar_imagePath_3 on komentar (image_path_id);
+alter table image_path add constraint fk_image_path_laporan_1 foreign key (laporan_id) references laporan (id) on delete restrict on update restrict;
+create index ix_image_path_laporan_1 on image_path (laporan_id);
+alter table komentar add constraint fk_komentar_user_2 foreign key (user_id) references user (id) on delete restrict on update restrict;
+create index ix_komentar_user_2 on komentar (user_id);
+alter table komentar add constraint fk_komentar_laporan_3 foreign key (laporan_id) references laporan (id) on delete restrict on update restrict;
+create index ix_komentar_laporan_3 on komentar (laporan_id);
 alter table laporan add constraint fk_laporan_tanggapan_4 foreign key (tanggapan_id) references tanggapan (id) on delete restrict on update restrict;
 create index ix_laporan_tanggapan_4 on laporan (tanggapan_id);
 alter table laporan add constraint fk_laporan_user_5 foreign key (user_id) references user (id) on delete restrict on update restrict;
 create index ix_laporan_user_5 on laporan (user_id);
-alter table laporan add constraint fk_laporan_imagePath_6 foreign key (image_path_id) references image_path (id) on delete restrict on update restrict;
-create index ix_laporan_imagePath_6 on laporan (image_path_id);
-alter table notif add constraint fk_notif_laporan_7 foreign key (laporan_id) references laporan (id) on delete restrict on update restrict;
-create index ix_notif_laporan_7 on notif (laporan_id);
-alter table notif add constraint fk_notif_user_8 foreign key (user_id) references user (id) on delete restrict on update restrict;
-create index ix_notif_user_8 on notif (user_id);
-alter table tanggapan add constraint fk_tanggapan_user_9 foreign key (user_id) references user (id) on delete restrict on update restrict;
-create index ix_tanggapan_user_9 on tanggapan (user_id);
-alter table tanggapan add constraint fk_tanggapan_imagePath_10 foreign key (image_path_id) references image_path (id) on delete restrict on update restrict;
-create index ix_tanggapan_imagePath_10 on tanggapan (image_path_id);
-alter table user add constraint fk_user_imageProfilePath_11 foreign key (image_profile_path_id) references image_path (id) on delete restrict on update restrict;
-create index ix_user_imageProfilePath_11 on user (image_profile_path_id);
+alter table notif add constraint fk_notif_laporan_6 foreign key (laporan_id) references laporan (id) on delete restrict on update restrict;
+create index ix_notif_laporan_6 on notif (laporan_id);
+alter table notif add constraint fk_notif_user_7 foreign key (user_id) references user (id) on delete restrict on update restrict;
+create index ix_notif_user_7 on notif (user_id);
+alter table tanggapan add constraint fk_tanggapan_user_8 foreign key (user_id) references user (id) on delete restrict on update restrict;
+create index ix_tanggapan_user_8 on tanggapan (user_id);
+alter table tanggapan add constraint fk_tanggapan_imagePath_9 foreign key (image_path_id) references image_path (id) on delete restrict on update restrict;
+create index ix_tanggapan_imagePath_9 on tanggapan (image_path_id);
+alter table user add constraint fk_user_imageProfilePath_10 foreign key (image_profile_path_id) references image_path (id) on delete restrict on update restrict;
+create index ix_user_imageProfilePath_10 on user (image_profile_path_id);
 
 
 

@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ning.http.client.Request;
 
-import model_helper.UserHelper;
 import models.Auth;
 import models.ImagePath;
 import models.Komentar;
@@ -95,35 +94,44 @@ public class BackEndUserController extends Controller implements Constants {
     }
     
     public static Result insertLaporan(){
-    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude"/*, "time"*/};
+    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "judulLaporan"/*, "time"*/};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	
-    	ImagePath imagePath = uploadFile("picture");
-    	if(imagePath == null){
-    		return badRequest(JsonHandler.getSuitableResponse("require datas", false));
-    	}
     	
-    	imagePath.keterangan = IM_LAPORAN;
-    	imagePath.save();
     	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
     	}
     	Laporan laporan = new Laporan();
     	laporan.user = user;
+    	laporan.judulLaporan = requestHandler.getStringValue("judulLaporan");
     	laporan.dataLaporan = requestHandler.getStringValue("dataLaporan");
     	laporan.katagoriLaporan = requestHandler.getStringValue("katagoriLaporan");
     	laporan.longitude = requestHandler.getDoubleValue("longitude");
     	laporan.latitude = requestHandler.getDoubleValue("latitude");
     	laporan.time = Calendar.getInstance();
-    	laporan.imagePath = imagePath;
     	laporan.save();
     	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
     }
+    
+    public static Result insertLaporanImage(){
+    	String key[] = {"laporanId", "picture"};
+    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+    	imagePath.save();
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+    	laporan.listImagePath.add(imagePath);
+    	return ok(JsonHandler.getSuitableResponse("success insert image", true));
+    }
+    
     /*
      * kekurangan - kurang difilter perbagian untuk diambil.
      * contoh 10 item terupdate berdasarkan tanggal.
@@ -252,19 +260,10 @@ public class BackEndUserController extends Controller implements Constants {
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
-    	UserHelper helper = new UserHelper();
-    	helper.id = user.id;
-    	helper.email = user.email;
-    	helper.isFollowing = user.listFollowerUser.contains(userFollower);
-    	helper.jumlahFollowerUser = user.jumlahFollowerUser;
-    	helper.jumlahFollowingUser = user.jumlahFollowingUser;
-    	helper.name = user.name;
-    	helper.password = user.password;
-    	helper.status = user.status;
-    	helper.type = user.type;
-    	helper.userName = user.userName;
-    	helper.imageProfilePath = user.imageProfilePath;    
-    	return ok(JsonHandler.getSuitableResponse(helper, true));
+    	
+    	user.isFollowing = user.listFollowerUser.contains(userFollower);
+    	    
+    	return ok(JsonHandler.getSuitableResponse(user, true));
     }
     
     public static Result follow(){
@@ -323,19 +322,6 @@ public class BackEndUserController extends Controller implements Constants {
     
     
     public static Result test(){
-//    	String key[] = {"idUser", "idUserFollow"};
-//    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-//    	requestHandler.setArrayKey(key);
-//    	if(requestHandler.isContainError()){
-//    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-//    	}
-//    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
-//    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
-//    	if(user == null || userFollow == null){
-//    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-//    	}
-//    	userFollow.tambahFollowerUser(user);
-//    	return ok(JsonHandler.getSuitableResponse(user, true));
     	return ok();
     }
     
@@ -366,44 +352,7 @@ public class BackEndUserController extends Controller implements Constants {
 		}
     }
     
-    public static Result deleteImage(){
-    	String [] key = {"idImage"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	String statusResponse = ImagePath.deleteImageByid(requestHandler.getLongValue("idImage"));
-    	return ok(JsonHandler.getSuitableResponse(statusResponse, true));
-    }
     
-    public static Result insertImage(){
-    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
-    	if(imagePath == null){
-    		return badRequest(JsonHandler.getSuitableResponse("error insert image", false));
-    	}
-    	imagePath.save();
-    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
-    }
-    
-    
-    public static Result uploadImageExample(){
-    	ImagePath imagePath = uploadFile("picture");
-    	if(imagePath == null){
-    		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
-    	}
-    	imagePath.save();
-    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
-    }
-    
-    public static Result uploadImageLaporanExample(){
-    	ImagePath imagePath = uploadFile("picture");
-    	if(imagePath == null){
-    		return badRequest(JsonHandler.getSuitableResponse("error upload", false));
-    	}
-    	imagePath.save();
-    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
-    }
     
     public static Result changeProfilePicture(){
     	String [] key = {"idUser"};
@@ -463,6 +412,7 @@ public class BackEndUserController extends Controller implements Constants {
     	}
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
     	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
+    	laporan.update();
     	return ok(JsonHandler.getSuitableResponse("success add view", true));
     }
     

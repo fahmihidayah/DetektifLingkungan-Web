@@ -1,6 +1,9 @@
 package models;
 
+import java.util.Calendar;
+
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -18,6 +21,9 @@ public class Notif extends Model {
 	public Long id;
 	@OneToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;
+	@Column
+	public Calendar time;
+	
 	@JsonIgnore
 	@ManyToOne(cascade = CascadeType.ALL)
 	public User user;

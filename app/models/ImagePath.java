@@ -3,11 +3,15 @@ package models;
 import java.io.File;
 import java.util.UUID;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import play.Play;
 import play.db.ebean.Model;
@@ -30,6 +34,10 @@ public class ImagePath extends Model {
 	public String fileName;	
 	@Column
 	public String keterangan = IM_DEFAULT_PROFILE;
+	
+	@ManyToOne(cascade = CascadeType.ALL)
+	@JsonIgnore
+	public Laporan laporan;
 	
 	public static Finder<Long, ImagePath> finder = new Finder<>(Long.class, ImagePath.class);
 	public static String PATH = PATH_IMAGE;

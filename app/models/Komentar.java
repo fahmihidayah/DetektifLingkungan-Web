@@ -25,8 +25,5 @@ public class Komentar extends Model {
 	@ManyToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;
 	
-	@OneToOne(cascade = CascadeType.ALL)
-	public ImagePath imagePath;
-	
 	public static Finder<Long, Komentar> finder = new Finder<>(Long.class, Komentar.class);
 }

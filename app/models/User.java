@@ -34,7 +34,7 @@ public class User extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long id;
-
+	@JsonIgnore
 	@Column(unique = true, length = 256, nullable = false)
 	public String userName;
 
@@ -44,7 +44,7 @@ public class User extends Model {
 	
 // uncomment the transient to delete password column and more secure 
 //	@Transient
-//	@JsonIgnore
+	@JsonIgnore
 	@Column
 	public String password;
 	
@@ -83,6 +83,9 @@ public class User extends Model {
 	
 	@OneToOne(cascade = CascadeType.ALL)
 	public ImagePath imageProfilePath;
+	
+	@Transient
+	public boolean isFollowing;
 	
 	public void tambahFollowerUser(User user){
 		listFollowerUser.add(user);

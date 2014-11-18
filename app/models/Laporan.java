@@ -25,6 +25,10 @@ public class Laporan extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long id;
+	
+	@Column
+	public String judulLaporan;
+	
 	@Column
 	public String dataLaporan;
 	@OneToOne(cascade = CascadeType.ALL)
@@ -49,8 +53,8 @@ public class Laporan extends Model {
 	public Double latitude;
 	@Column
 	public Calendar time;
-	@OneToOne(cascade = CascadeType.ALL)
-	public ImagePath imagePath;
+	@OneToMany(cascade = CascadeType.ALL)
+	public List<ImagePath> listImagePath = new ArrayList<ImagePath>();
 	
 	@Column
 	public BigInteger viwer = new BigInteger("0");

@@ -10,12 +10,13 @@ import java.util.List;
 //import org.apache.commons.io.FileUtils;
 
 
+
 import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import model_helper.UserHelper;
 import models.Auth;
+import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
 import models.ServerAddress;
@@ -70,4 +71,14 @@ public class ServerController extends Controller implements Constants {
 		
 		return ok(JsonHandler.getSuitableResponse("success change server", true));
 	}
+	
+	public static Result setDefaultProfilePicture(){
+		ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+    	if(imagePath == null){
+    		return badRequest(JsonHandler.getSuitableResponse("error insert image", false));
+    	}
+    	imagePath.save();
+    	return ok(JsonHandler.getSuitableResponse(imagePath, true));
+	}
+	
 }
