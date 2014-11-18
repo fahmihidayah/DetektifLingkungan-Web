@@ -145,6 +145,8 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey
      * "laporanId"
      * "picture" (file)
+     * 
+     * call this api as many as image count
      * @return
      */
     public static Result insertLaporanImage(){
@@ -377,15 +379,20 @@ public class BackEndUserController extends Controller implements Constants {
     	user.update();
     	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
     }
-    
+    /**
+     * change status api
+     * require 
+     * authKey, userId, status
+     * @return
+     */
     public static Result changeStatus(){
-    	String key[] = {"idUser", "status"};
+    	String key[] = {"userId", "status"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	if(user == null ){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
@@ -427,16 +434,20 @@ public class BackEndUserController extends Controller implements Constants {
     }
     
     
-    
+    /**
+     * change user prof pict api.
+     * require 
+     * authKey, userId, picture 
+     * @return
+     */
     public static Result changeProfilePicture(){
-    	String [] key = {"idUser"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	String [] key = {"userId"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
-//    	return ok(JsonHandler.getSuitableResponse(user, true));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
     	if(imagePath == null){
     		return badRequest(JsonHandler.getSuitableResponse("require image", false));
@@ -452,18 +463,21 @@ public class BackEndUserController extends Controller implements Constants {
     }
     
     /**
+     * get follower api.
+     * require 
+     * authKey, userId, mode.
      * mode 0 = follower
      * mode 1 = following
      * @return
      */
     public static Result getFollower(){
-    	String key[] = {"idUser", "mode"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
+    	String key[] = {"userId", "mode"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	String mode = requestHandler.getStringValue("mode");
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
@@ -476,15 +490,20 @@ public class BackEndUserController extends Controller implements Constants {
     	}
     }
     
-    
+    /**
+     * view laporan api.
+     * require 
+     * authKey, laporanId;
+     * @return
+     */
     public static Result viewLaporan(){
-    	String key[] = {"idLaporan"};
+    	String key[] = {"laporanId"};
     	RequestHandler requestHandler = new RequestHandler(true, frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return ok(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(),false));
     	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
     	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
     	laporan.update();
     	return ok(JsonHandler.getSuitableResponse("success add view", true));
