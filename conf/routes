@@ -10,6 +10,7 @@ POST	/api/login					controllers.BackEndUserController.login()
 
 POST	/api/register				controllers.BackEndUserController.registerUser()
 POST	/api/insert_laporan			controllers.BackEndUserController.insertLaporan()
+POST	/api/insert_image_laporan	controllers.BackEndUserController.insertLaporanImage()
 #POST	/api/list_laporan			controllers.BackEndUserController.listLaporan()
 POST	/api/logout					controllers.BackEndUserController.logout()
 POST	/api/get_list_laporan		controllers.BackEndUserController.getListLaporan()

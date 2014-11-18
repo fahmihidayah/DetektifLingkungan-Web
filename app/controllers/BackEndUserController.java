@@ -40,7 +40,11 @@ public class BackEndUserController extends Controller implements Constants {
     public static Result index() {
         return ok(index.render("Your new application is ready."));
     }
-    
+    /**
+     * login api.
+     * require userName, password
+     * @return
+     */
     public static Result login(){
     	String key[] = {"userName", "password"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
@@ -63,7 +67,11 @@ public class BackEndUserController extends Controller implements Constants {
     	data.put("user", Json.toJson(user));
     	return ok(JsonHandler.getSuitableResponse(data, true));
     }
-
+    /**
+     * logout api.
+     * require authKey
+     * @return
+     */
     public static Result logout(){
     	String key[] = {"authKey"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
@@ -76,7 +84,13 @@ public class BackEndUserController extends Controller implements Constants {
     	auth.delete();
     	return ok(JsonHandler.getSuitableResponse("logout", true));
     }
-    
+    /**
+     * register user api
+     * require 
+     * "name", "userName", 
+     * "password", "email"
+     * @return
+     */
     public static Result registerUser(){
     	String key[] = {"name", "userName", "password", "email"};
     	RequestHandler requestHandler = new RequestHandler(frmUser);
@@ -92,7 +106,15 @@ public class BackEndUserController extends Controller implements Constants {
     	user.save();
     	return ok(JsonHandler.getSuitableResponse(user, true));
     }
-    
+    /**
+     * insert laporan.
+     * require 
+     * "authKey"
+     * "dataLaporan", "userId", 
+     * "katagoriLaporan", "longitude", 
+     * "latitude", "judulLaporan" 
+     * @return
+     */
     public static Result insertLaporan(){
     	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "judulLaporan"/*, "time"*/};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
@@ -117,17 +139,27 @@ public class BackEndUserController extends Controller implements Constants {
     	laporan.save();
     	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
     }
-    
+    /**
+     * insert image laporan api.
+     * require 
+     * authKey
+     * "laporanId"
+     * "picture" (file)
+     * @return
+     */
     public static Result insertLaporanImage(){
-    	String key[] = {"laporanId", "picture"};
+    	String key[] = {"laporanId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
-    	imagePath.save();
     	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+    	
+    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+    	imagePath.laporan= laporan; 	
+    	imagePath.keterangan = IM_LAPORAN;
+    	imagePath.save();
     	laporan.listImagePath.add(imagePath);
     	return ok(JsonHandler.getSuitableResponse("success insert image", true));
     }
@@ -141,16 +173,17 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok(JsonHandler.getSuitableResponse(listLaporan, true));
     }
     
-    public static Result tambahKomentar(){
-    	
-    	return ok();
-    }
     /**
-     * type h, l, f
+     * get list laporan api.
+     * require 
+     * "userId"
+     * "type" h, l, f
+     * 
+     * option 
      * @return
      */
     public static Result getListLaporan(){
-    	String key[] = {"idUser","type"};
+    	String key[] = {"userId","type"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	requestHandler.checkError();
@@ -159,13 +192,13 @@ public class BackEndUserController extends Controller implements Constants {
     	}
     	String type = requestHandler.getStringValue("type");
     	Laporan laporan = null;
-    	if(type.equalsIgnoreCase("h") && type.equalsIgnoreCase("l")){
-    		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("idLaporan"));
+    	if(type.equalsIgnoreCase("h") || type.equalsIgnoreCase("l")){
+    		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("laporanId"));
     		if(laporan == null){
     			return badRequest(JsonHandler.getSuitableResponse("laporan not found", false));
     		}
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
     	
     	List<Laporan> listUpdateLaporan = null; 
     	
@@ -176,7 +209,7 @@ public class BackEndUserController extends Controller implements Constants {
     		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
     	}
     	else if(type.equalsIgnoreCase("o")){
-    		listUpdateLaporan = Laporan.finder.where().eq("user_id", requestHandler.getLongValue("idUser") + "").order("time desc").setMaxRows(5).findList();
+    		listUpdateLaporan = Laporan.finder.where().eq("user_id", requestHandler.getLongValue("userId") + "").order("time desc").setMaxRows(5).findList();
     	}
     	else {
     		listUpdateLaporan = Laporan.finder.where().order("time desc")/*.setMaxRows(5)*/.findList();

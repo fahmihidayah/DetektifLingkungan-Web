@@ -28,10 +28,11 @@ public class ImagePath extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long id;
+	@JsonIgnore
 	@Column
 	public String path;
 	@Column
-	public String fileName;	
+	public String fileName;
 	@Column
 	public String keterangan = IM_DEFAULT_PROFILE;
 	
