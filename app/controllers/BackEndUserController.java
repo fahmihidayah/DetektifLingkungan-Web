@@ -310,7 +310,7 @@ public class BackEndUserController extends Controller implements Constants {
     /**
      * get user profile api.
      * require 
-     * userId, followerUserId
+     * authKey, userId, followerUserId
      * @return
      */
     public static Result getUserProfile(){
@@ -330,35 +330,44 @@ public class BackEndUserController extends Controller implements Constants {
     	    
     	return ok(JsonHandler.getSuitableResponse(user, true));
     }
-    
+    /**
+     * follow api.
+     * require
+     * authKey,  userId, followerUserId
+     * @return
+     */
     public static Result follow(){
-    	String key[] = {"idUser", "idUserFollow"};
+    	String key[] = {"userId", "followerUserId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("followerUserId"));
     	if(user == null || userFollow == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
     	userFollow.tambahFollowerUser(user);
     	user.tambahFollowingUser(userFollow);
     	userFollow.update();
-//    	user.update();
     	return ok(JsonHandler.getSuitableResponse("success follow", true));
     }
-    
+    /**
+     * unfollow api.
+     * require 
+     * authKey, userId, followerUserId
+     * @return
+     */
     public static Result unfollow(){
-    	String key[] = {"idUser", "idUserFollow"};
+    	String key[] = {"userId", "followerUserId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("idUserFollow"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("followerUserId"));
     	if(user == null || userFollow == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
