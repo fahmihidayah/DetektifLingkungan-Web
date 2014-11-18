@@ -176,10 +176,12 @@ public class BackEndUserController extends Controller implements Constants {
     /**
      * get list laporan api.
      * require 
+     * authKey
      * "userId"
      * "type" h, l, f
      * 
      * option 
+     * laporanId
      * @return
      */
     public static Result getListLaporan(){
@@ -223,73 +225,103 @@ public class BackEndUserController extends Controller implements Constants {
     	
     	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
     }
-    
+    /**
+     * pantau api.
+     * require
+     * authKey
+     * "userId", "laporanId"
+     * @return
+     */
     public static Result pantau(){
-    	String key[] = {"idUser", "idLaporan"};
+    	String key[] = {"userId", "laporanId"};
     	RequestHandler requestHandler = new RequestHandler(true, frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
     	laporan.tambahUserPemantau(userPemantau);
     	laporan.update();
     	laporan.pantau = true;
     	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
+    /**
+     * unpantau api.
+     * require 
+     * authKey
+     * "userId", "laporanId"
+     * @return
+     */
     public static Result unpantau(){
-    	String key[] = {"idUser", "idLaporan"};
+    	String key[] = {"userId", "laporanId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
-    	User userPemantau = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
     	laporan.hapusUserPemantau(userPemantau);
     	Ebean.save(laporan);
     	laporan.pantau = false;
     	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
-    
-    
+    /**
+     * list komentar api.
+     * requre 
+     * authKey, laporanId
+     * @return
+     */
     public static Result listKomentar(){
-    	String key[] = {"idLaporan"};
+    	String key[] = {"laporanId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan.id", requestHandler.getStringValue("idLaporan")).findList();
+    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan.id", requestHandler.getStringValue("laporanId")).findList();
     	return ok(JsonHandler.getSuitableResponse(listKomentar, true));
     }
     
+    /**
+     * insert komentar api.
+     * require 
+     * authKey,
+     * "laporanId", "dataKomentar", "userId"
+     * @return
+     */
+    
     public static Result insertKomentar(){
-    	String key[] = {"idLaporan", "dataKomentar", "idUser"};
+    	String key[] = {"laporanId", "dataKomentar", "userId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	Komentar komentar = new Komentar();
-    	komentar.user = User.finder.byId(requestHandler.getLongValue("idUser"));
+    	komentar.user = User.finder.byId(requestHandler.getLongValue("userId"));
     	komentar.dataKomentar = requestHandler.getStringValue("dataKomentar");
-    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("idLaporan"));
+    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
     	komentar.laporan.tambahKomentar(komentar);
     	komentar.laporan.update();
     	return ok(JsonHandler.getSuitableResponse(komentar, true));
     }
-    
+    /**
+     * get user profile api.
+     * require 
+     * userId, followerUserId
+     * @return
+     */
     public static Result getUserProfile(){
-    	String key[] = {"idUser","idUserFollower"};
+    	String key[] = {"userId","followerUserId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User user = User.finder.byId(requestHandler.getLongValue("idUser"));
-    	User userFollower = User.finder.byId(requestHandler.getLongValue("idUserFollower"));
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+    	User userFollower = User.finder.byId(requestHandler.getLongValue("followerUserId"));
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
