@@ -4,6 +4,7 @@ import java.io.File;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import models.Auth;
 import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
+import models.PrivateMessage;
 import models.ServerAddress;
 import models.User;
 import fahmi.lib.Constants;
@@ -508,6 +510,71 @@ public class BackEndUserController extends Controller implements Constants {
     	laporan.update();
     	return ok(JsonHandler.getSuitableResponse("success add view", true));
     }
+    /**
+     * send message api.
+     * require 
+     * authKey
+     * "senderUserId", "receiverUserId",
+     * "title", "message"
+     * @return
+     */
     
+    public static Result sendPrivateMessage(){
+    	String key [] = {"senderUserId", "receiverUserId", "title", "message"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	
+    	User userSender = User.finder.byId(requestHandler.getLongValue("senderUserId"));
+    	if(userSender == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user sender not found", false));
+    	}
+    	User userReceiver = User.finder.byId(requestHandler.getLongValue("receiverUserId"));
+    	if(userReceiver == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user receiver not found", false));
+    	}
+    	
+    	PrivateMessage privateMessage = new PrivateMessage();
+    	privateMessage.date = Calendar.getInstance();
+    	privateMessage.title = requestHandler.getStringValue("title");
+    	privateMessage.message = requestHandler.getStringValue("message");
+    	privateMessage.userReceiver = userReceiver;
+    	privateMessage.userSender = userSender;
+    	privateMessage.isRead = false;
+    	privateMessage.save();
+    	return ok(JsonHandler.getSuitableResponse(privateMessage, true));
+    }
+    
+    /**
+     * get list private message api.
+     * require 
+     * authKey
+     * userId, type
+     * @return
+     */
+    public static Result getListPrivateMessage(){
+    	String key [] = {"userId", "type"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	
+    	User userSender = User.finder.byId(requestHandler.getLongValue("userId"));
+    	if(userSender == null){
+    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+    	}
+    	String type = requestHandler.getStringValue("type");
+    	List<PrivateMessage> listPrivateMessage = new ArrayList<>();
+    	if(type.equalsIgnoreCase("i")){
+    		listPrivateMessage = PrivateMessage.finder.where().eq("user_receiver_id", requestHandler.getStringValue("userId")).findList();
+    	}
+    	else {
+    		listPrivateMessage = PrivateMessage.finder.where().eq("user_sender_id", requestHandler.getStringValue("userId")).findList();
+    	}
+    	return ok(JsonHandler.getSuitableResponse(listPrivateMessage, true));
+    }
     
 }
