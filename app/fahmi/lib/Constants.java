@@ -15,4 +15,7 @@ public interface Constants {
 	
 	public static String PATH_IMAGE = "myUploadPath";
 	public static String DATE_FROMAT = "EEEE, MMM dd, yyyy HH:mm:ss a";
+	
+	public static String API_KEY = "AIzaSyC-h1lOYQbxzi4oZ4aSesebqfL20CEKhw0";
+	public static String GCM_URL = "https://android.googleapis.com/gcm/send";
 }

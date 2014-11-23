@@ -1,6 +1,8 @@
 package controllers;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -13,12 +15,15 @@ import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ning.http.client.Request;
+import com.ning.http.client.Response;
+import com.ning.http.multipart.MultipartRequestEntity;
+import com.ning.http.multipart.Part;
+import com.ning.http.multipart.StringPart;
 
 import models.Auth;
 import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
-import models.PrivateMessage;
 import models.ServerAddress;
 import models.User;
 import fahmi.lib.Constants;
@@ -26,7 +31,10 @@ import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
 import play.*;
 import play.data.Form;
+import play.libs.F.Promise;
 import play.libs.Json;
+import play.libs.WS;
+import play.libs.WS.WSRequestHolder;
 import play.mvc.*;
 import play.mvc.Http.MultipartFormData;
 import play.mvc.Http.MultipartFormData.FilePart;
@@ -70,6 +78,24 @@ public class BackEndUserController extends Controller implements Constants {
     	return ok(JsonHandler.getSuitableResponse(data, true));
     }
     /**
+     * update user gcm id api.
+     * require 
+     * authKey.
+     * userId, gcmId
+     * @return
+     */
+    public static Result updateGcmId(){
+    	String key[] = {"userId", "gcmId"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+    	user.gcmId = requestHandler.getStringValue("gcmId");
+    	user.save();
+    	return ok(JsonHandler.getSuitableResponse("success update user", true));
+    }    /**
      * logout api.
      * require authKey
      * @return
@@ -139,7 +165,7 @@ public class BackEndUserController extends Controller implements Constants {
     	laporan.latitude = requestHandler.getDoubleValue("latitude");
     	laporan.time = Calendar.getInstance();
     	laporan.save();
-    	return ok(JsonHandler.getSuitableResponse("Success insert laporan", true));
+    	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
     /**
      * insert image laporan api.
@@ -518,33 +544,50 @@ public class BackEndUserController extends Controller implements Constants {
      * "title", "message"
      * @return
      */
-    
-    public static Result sendPrivateMessage(){
-    	String key [] = {"senderUserId", "receiverUserId", "title", "message"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
+    public static Promise<Result> sendMessage(){
+//    	Promise<Result> resultPromise = Promise.promise(new play.libs.F.Function<Result>() {
+//
+//			@Override
+//			public Object apply(Object arg0) throws Throwable {
+//				// TODO Auto-generated method stub
+//				return null;
+//			}
+//		});
+    }
+    /**
+     * login asycronus
+     * @return
+     */
+    public static Promise<Result> risetAsychronusApi(){
+    	JsonNode node = Json.newObject()
+    			.put("userName", "f")
+    			.put("password", "f");
     	
-    	User userSender = User.finder.byId(requestHandler.getLongValue("senderUserId"));
-    	if(userSender == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user sender not found", false));
-    	}
-    	User userReceiver = User.finder.byId(requestHandler.getLongValue("receiverUserId"));
-    	if(userReceiver == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user receiver not found", false));
-    	}
     	
-    	PrivateMessage privateMessage = new PrivateMessage();
-    	privateMessage.date = Calendar.getInstance();
-    	privateMessage.title = requestHandler.getStringValue("title");
-    	privateMessage.message = requestHandler.getStringValue("message");
-    	privateMessage.userReceiver = userReceiver;
-    	privateMessage.userSender = userSender;
-    	privateMessage.isRead = false;
-    	privateMessage.save();
-    	return ok(JsonHandler.getSuitableResponse(privateMessage, true));
+//    	Promise<JsonNode> holder = WS.url("http://127.0.0.1:9000/api/login")
+//    			.post(node).map(
+//    					new play.libs.F.Function<WS.Response, JsonNode>() {
+//
+//							@Override
+//							public JsonNode apply(play.libs.WS.Response arg0)
+//									throws Throwable {
+//								System.out.println(arg0.asJson().toString());
+//								return arg0.asJson();
+//							}
+//						});
+    	Promise<Result> holder = WS.url("http://127.0.0.1:9000/api/login")
+    			.post(node).map(
+    					new play.libs.F.Function<WS.Response, Result>() {
+
+							@Override
+							public Result apply(play.libs.WS.Response arg0)
+									throws Throwable {
+//								System.out.println(arg0.asJson().toString());
+								return ok(arg0.asJson().toString());
+							}
+						});
+    	
+    	return holder;
     }
     
     /**
@@ -555,26 +598,7 @@ public class BackEndUserController extends Controller implements Constants {
      * @return
      */
     public static Result getListPrivateMessage(){
-    	String key [] = {"userId", "type"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	
-    	User userSender = User.finder.byId(requestHandler.getLongValue("userId"));
-    	if(userSender == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
-    	String type = requestHandler.getStringValue("type");
-    	List<PrivateMessage> listPrivateMessage = new ArrayList<>();
-    	if(type.equalsIgnoreCase("i")){
-    		listPrivateMessage = PrivateMessage.finder.where().eq("user_receiver_id", requestHandler.getStringValue("userId")).findList();
-    	}
-    	else {
-    		listPrivateMessage = PrivateMessage.finder.where().eq("user_sender_id", requestHandler.getStringValue("userId")).findList();
-    	}
-    	return ok(JsonHandler.getSuitableResponse(listPrivateMessage, true));
+    	return ok();
     }
     
 }

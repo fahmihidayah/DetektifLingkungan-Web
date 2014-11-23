@@ -33,6 +33,9 @@ POST	/api/set_server				controllers.ServerController.setserver()
 POST	/api/change_server			controllers.ServerController.changeServerAddress()
 POST	/api/set_default_image		controllers.ServerController.setDefaultProfilePicture()
 
+#
+GET	/api/send_message			controllers.BackEndUserController.sendPrivateMessage()	
+
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)

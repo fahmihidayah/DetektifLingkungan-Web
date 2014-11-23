@@ -84,6 +84,9 @@ public class User extends Model {
 	@OneToOne(cascade = CascadeType.ALL)
 	public ImagePath imageProfilePath;
 	
+	@Column
+	public String gcmId ;
+	
 	@Transient
 	public boolean isFollowing;
 	
