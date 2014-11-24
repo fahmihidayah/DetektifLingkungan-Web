@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,6 +32,8 @@ import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
 import play.*;
 import play.data.Form;
+import play.libs.Akka;
+import play.libs.F;
 import play.libs.F.Promise;
 import play.libs.Json;
 import play.libs.WS;
@@ -544,7 +547,7 @@ public class BackEndUserController extends Controller implements Constants {
      * "title", "message"
      * @return
      */
-    public static Promise<Result> sendMessage(){
+    public static Result sendMessage(){
 //    	Promise<Result> resultPromise = Promise.promise(new play.libs.F.Function<Result>() {
 //
 //			@Override
@@ -553,6 +556,65 @@ public class BackEndUserController extends Controller implements Constants {
 //				return null;
 //			}
 //		});
+    	
+//    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+//
+//			@Override
+//			public Result apply() throws Throwable {
+//				String key [] = {"userSenderId", "userReceiverId", "message"};
+//				RequestHandler requestHandler = new RequestHandler(true,frmUser);
+//				requestHandler.setArrayKey(key);
+//				if(requestHandler.isContainError()){
+//					return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+//				}
+//				
+//				
+//				return null;
+//			}
+//		});
+//    	return promise;
+    	String key[] = {"userSenderId", "userReceiverId", "messageData"};
+    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+    	requestHandler.setArrayKey(key);
+    	if(requestHandler.isContainError()){
+    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+    	}
+    	User userSender = User.finder.byId(requestHandler.getLongValue("userSenderId"));
+    	User userReceiver = User.finder.byId(requestHandler.getLongValue("userReceiverId"));
+    	String messageData = requestHandler.getStringValue("messageData");
+    	String arrayGcmId [] = {userReceiver.gcmId};
+    	
+    	ObjectNode node = Json.newObject();
+    	node.put("registration_ids", Json.toJson(arrayGcmId));
+    			node.put("data", JsonHandler.getSuitableResponse(messageData, true));
+    	Promise<String> promise = WS.url("https://android.googleapis.com/gcm/send")
+    			.setHeader("Authorization", "key="+API_KEY)
+    			.setHeader("Content-Type", "application/json")
+    			.post(node).map(new F.Function<WS.Response, String>() {
+
+					@Override
+					public String apply(play.libs.WS.Response arg0)
+							throws Throwable {
+						System.out.println(arg0.asJson().toString());
+						return arg0.asJson().toString();
+					}
+				});
+    	
+    			
+    	
+//    	Promise<Result> promise = WS.url("http://127.0.0.1:9000/api/login")
+//    			.post(node).map(
+//    					new play.libs.F.Function<WS.Response, Result>() {
+//
+//							@Override
+//							public Result apply(play.libs.WS.Response arg0)
+//									throws Throwable {
+//								System.out.println(arg0.asJson().toString());
+//								return ok(arg0.asJson().toString());
+//							}
+//						});
+    	return ok(JsonHandler.getSuitableResponse(promise, true));
+    	
     }
     /**
      * login asycronus
