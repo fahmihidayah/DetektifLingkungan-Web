@@ -18,7 +18,7 @@ import play.db.ebean.Model;
 public class Notif extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idNotif;
 	@OneToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;
 	@Column

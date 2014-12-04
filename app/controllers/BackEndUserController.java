@@ -15,16 +15,19 @@ import java.util.concurrent.Callable;
 import com.avaje.ebean.Ebean;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.Gson;
 import com.ning.http.client.Request;
 import com.ning.http.client.Response;
 import com.ning.http.multipart.MultipartRequestEntity;
 import com.ning.http.multipart.Part;
 import com.ning.http.multipart.StringPart;
 
+import model_response.SendMessageResponse;
 import models.Auth;
 import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
+import models.PrivateMessage;
 import models.ServerAddress;
 import models.User;
 import fahmi.lib.Constants;
@@ -238,13 +241,13 @@ public class BackEndUserController extends Controller implements Constants {
     	List<Laporan> listUpdateLaporan = null; 
     	
     	if(type.equalsIgnoreCase("h")){
-    		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime()).order("time desc").findList();
+    		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime())/*.order("time desc")*/.findList();
     	}
     	else if (type.equalsIgnoreCase("l")){
     		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
     	}
     	else if(type.equalsIgnoreCase("o")){
-    		listUpdateLaporan = Laporan.finder.where().eq("user_id", requestHandler.getLongValue("userId") + "").order("time desc").setMaxRows(5).findList();
+    		listUpdateLaporan = Laporan.finder.where().eq("user_id_user", requestHandler.getLongValue("userId") + "").order("time desc").setMaxRows(5).findList();
     	}
     	else {
     		listUpdateLaporan = Laporan.finder.where().order("time desc")/*.setMaxRows(5)*/.findList();
@@ -313,7 +316,7 @@ public class BackEndUserController extends Controller implements Constants {
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan.id", requestHandler.getStringValue("laporanId")).findList();
+    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan_id_laporan", requestHandler.getStringValue("laporanId")).findList();
     	return ok(JsonHandler.getSuitableResponse(listKomentar, true));
     }
     
@@ -370,20 +373,22 @@ public class BackEndUserController extends Controller implements Constants {
      * @return
      */
     public static Result follow(){
-    	String key[] = {"userId", "followerUserId"};
+    	String key[] = {"userId", "followedUserId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("followerUserId"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
     	if(user == null || userFollow == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
-    	userFollow.tambahFollowerUser(user);
-    	user.tambahFollowingUser(userFollow);
+    	userFollow.listFollowerUser.add(user);
+    	userFollow.jumlahFollowerUser++;
     	userFollow.update();
+    	user.jumlahFollowingUser++;
+    	user.update();
     	return ok(JsonHandler.getSuitableResponse("success follow", true));
     }
     /**
@@ -393,20 +398,22 @@ public class BackEndUserController extends Controller implements Constants {
      * @return
      */
     public static Result unfollow(){
-    	String key[] = {"userId", "followerUserId"};
+    	String key[] = {"userId", "followedUserId"};
     	RequestHandler requestHandler = new RequestHandler(true,frmUser);
     	requestHandler.setArrayKey(key);
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
     	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("followerUserId"));
+    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
     	if(user == null || userFollow == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
-    	userFollow.hapusFollowerUser(user);
+    	userFollow.listFollowerUser.remove(user);
+    	userFollow.jumlahFollowerUser--;
     	userFollow.update();
-    	user.hapusFollowingUser(userFollow);
+    	user.listFollowingUser.remove(userFollow);
+    	user.jumlahFollowingUser--;
     	user.update();
     	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
     }
@@ -513,11 +520,11 @@ public class BackEndUserController extends Controller implements Constants {
     	if(user == null){
     		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
     	}
-    	if(mode.equalsIgnoreCase("follower")){
-    		return ok(JsonHandler.getSuitableResponse(user.listFollowerUser, true));	
+    	if(mode.equalsIgnoreCase("0")){
+    		return ok(JsonHandler.getSuitableResponse(user.getListFollowerUser(), true));	
     	}
     	else {
-    		return ok(JsonHandler.getSuitableResponse(user.listFollowingUser, true)); 
+    		return ok(JsonHandler.getSuitableResponse(user.getListFollowingUser(), true)); 
     	}
     }
     
@@ -579,14 +586,26 @@ public class BackEndUserController extends Controller implements Constants {
     	if(requestHandler.isContainError()){
     		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
     	}
-    	User userSender = User.finder.byId(requestHandler.getLongValue("userSenderId"));
-    	User userReceiver = User.finder.byId(requestHandler.getLongValue("userReceiverId"));
-    	String messageData = requestHandler.getStringValue("messageData");
+    	final User userSender = User.finder.byId(requestHandler.getLongValue("userSenderId"));
+    	final User userReceiver = User.finder.byId(requestHandler.getLongValue("userReceiverId"));
+    	final String messageData = requestHandler.getStringValue("messageData");
     	String arrayGcmId [] = {userReceiver.gcmId};
+    	
+    	
+    	
+    	PrivateMessage privateMessage = new PrivateMessage();
+    	privateMessage.idPrivateMessage = java.util.UUID.randomUUID().getLeastSignificantBits();
+		privateMessage.messageData = messageData;
+		privateMessage.userReceiver = userReceiver;
+		privateMessage.userSender = userSender;
+		privateMessage.time = Calendar.getInstance();
+		privateMessage.status = STATUS_UNREAD;
+		ObjectNode messageJson = Json.newObject();
+    	messageJson.put("message", Json.toJson(privateMessage));
     	
     	ObjectNode node = Json.newObject();
     	node.put("registration_ids", Json.toJson(arrayGcmId));
-    			node.put("data", JsonHandler.getSuitableResponse(messageData, true));
+    			node.put("data", messageJson);
     	Promise<String> promise = WS.url("https://android.googleapis.com/gcm/send")
     			.setHeader("Authorization", "key="+API_KEY)
     			.setHeader("Content-Type", "application/json")
@@ -596,6 +615,17 @@ public class BackEndUserController extends Controller implements Constants {
 					public String apply(play.libs.WS.Response arg0)
 							throws Throwable {
 						System.out.println(arg0.asJson().toString());
+						SendMessageResponse messageResponse = new Gson().fromJson(arg0.asJson().toString(), SendMessageResponse.class);
+						System.out.println(arg0.asJson().toString());
+						if(messageResponse.getFailure() >= 1){
+							PrivateMessage privateMessage = new PrivateMessage();
+							privateMessage.messageData = messageData;
+							privateMessage.userReceiver = userReceiver;
+							privateMessage.userSender = userSender;
+							privateMessage.time = Calendar.getInstance();
+							privateMessage.save();
+						}
+//						System.out.println(arg0.asJson().toString());
 						return arg0.asJson().toString();
 					}
 				});
@@ -613,7 +643,8 @@ public class BackEndUserController extends Controller implements Constants {
 //								return ok(arg0.asJson().toString());
 //							}
 //						});
-    	return ok(JsonHandler.getSuitableResponse(promise, true));
+    	return ok(messageJson);
+//    	return ok(JsonHandler.getSuitableResponse(messageJson, true));
     	
     }
     /**

@@ -12,7 +12,7 @@ import play.db.ebean.Model;
 public class ServerAddress extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idServerAddress;
 	@Column
 	public String address;
 

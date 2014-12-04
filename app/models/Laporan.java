@@ -8,6 +8,7 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,7 +25,7 @@ import play.db.ebean.Model;
 public class Laporan extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idLaporan;
 	
 	@Column
 	public String judulLaporan;
@@ -39,7 +40,7 @@ public class Laporan extends Model {
 	@OneToMany(cascade = CascadeType.ALL)
 	public List<Komentar> listKomentar = new ArrayList<>();
 	@JsonIgnore
-	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL)
+	@ManyToMany(mappedBy = "listPantauLaporan", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	public List<User> listUserPemantau ;
 	@Column 
 	public Integer jumlahKomentar = 0;

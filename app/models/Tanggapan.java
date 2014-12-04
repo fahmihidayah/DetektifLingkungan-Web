@@ -13,7 +13,7 @@ import play.db.ebean.Model;
 public class Tanggapan extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idTanggapan;
 	@Column
 	public String dataTanggapan;
 	@OneToOne(cascade = CascadeType.ALL)

@@ -7,7 +7,7 @@ GET     /                           controllers.BackEndUserController.index()
 
 # api 
 POST	/api/login					controllers.BackEndUserController.login()
-
+POST	/api/update_gcm_id			controllers.BackEndUserController.updateGcmId()
 POST	/api/register				controllers.BackEndUserController.registerUser()
 POST	/api/insert_laporan			controllers.BackEndUserController.insertLaporan()
 POST	/api/insert_image_laporan	controllers.BackEndUserController.insertLaporanImage()

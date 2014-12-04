@@ -33,7 +33,7 @@ public class User extends Model {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idUser;
 	@JsonIgnore
 	@Column(unique = true, length = 256, nullable = false)
 	public String userName;
@@ -65,12 +65,12 @@ public class User extends Model {
 	
 	// pilih salah satu (masih dalam tahap riset)
 	@JsonIgnore
-	@ManyToMany( mappedBy = "listFollowingUser")
+	@ManyToMany(mappedBy = "listFollowingUser")
 	public List<User> listFollowerUser = new ArrayList<User>();
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(
-			name = "user_follow_user",
+			name = "follower_user",
 			joinColumns = @JoinColumn(name = "follower_user_id"),
 			inverseJoinColumns = @JoinColumn(name = "following_user_id")
 			)
@@ -85,30 +85,11 @@ public class User extends Model {
 	public ImagePath imageProfilePath;
 	
 	@Column
+	@JsonIgnore
 	public String gcmId ;
 	
 	@Transient
 	public boolean isFollowing;
-	
-	public void tambahFollowerUser(User user){
-		listFollowerUser.add(user);
-		jumlahFollowerUser = listFollowerUser.size();
-	}
-	
-	public void tambahFollowingUser(User user){
-		listFollowingUser.add(user);
-		jumlahFollowingUser = listFollowingUser.size();
-	}
-	
-	public void hapusFollowerUser(User user){
-		listFollowerUser.remove(user);
-		jumlahFollowerUser = listFollowerUser.size();
-	}
-	
-	public void hapusFollowingUser(User user){
-		listFollowingUser.remove(user);
-		jumlahFollowingUser = listFollowingUser.size();
-	}
 	
 	public static Finder<Long, User> finder = new Finder<Long, User>(
 			Long.class, User.class);
@@ -128,6 +109,21 @@ public class User extends Model {
         shaPassword = getSha512(password);
     }
 
+    public List<User> getListFollowerUser() {
+    	for (User user : listFollowerUser) {
+			user.isFollowing = true;
+		}
+		return listFollowerUser;
+	}
+    
+    public List<User> getListFollowingUser() {
+    	for (User user : listFollowingUser) {
+    		if(this.listFollowerUser.contains(user)){
+    			user.isFollowing = true;	
+    		}
+		}
+		return listFollowingUser;
+	}
 	public static byte[] getSha512(String value) {
 
 		try {
@@ -148,7 +144,7 @@ public class User extends Model {
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((idUser == null) ? 0 : idUser.hashCode());
 		return result;
 	}
 
@@ -161,10 +157,10 @@ public class User extends Model {
 		if (getClass() != obj.getClass())
 			return false;
 		User other = (User) obj;
-		if (id == null) {
-			if (other.id != null)
+		if (idUser == null) {
+			if (other.idUser != null)
 				return false;
-		} else if (!id.equals(other.id))
+		} else if (!idUser.equals(other.idUser))
 			return false;
 		return true;
 	}

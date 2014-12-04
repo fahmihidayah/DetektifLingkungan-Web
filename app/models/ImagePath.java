@@ -27,7 +27,7 @@ import static fahmi.lib.Constants.UPLOADS_FOLDER;
 public class ImagePath extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Long id;
+	public Long idImagePath;
 	@JsonIgnore
 	@Column
 	public String path;

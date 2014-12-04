@@ -18,4 +18,8 @@ public interface Constants {
 	
 	public static String API_KEY = "AIzaSyC-h1lOYQbxzi4oZ4aSesebqfL20CEKhw0";
 	public static String GCM_URL = "https://android.googleapis.com/gcm/send";
+	
+	public static String STATUS_PENDING = "PENDING";
+	public static String STATUS_DELIVER = "DELIVER";
+	public static String STATUS_UNREAD = "UNREAD";
 }
