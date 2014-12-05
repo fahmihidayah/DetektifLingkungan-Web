@@ -1,5 +1,7 @@
 package models;
 
+import java.util.Calendar;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -21,6 +23,8 @@ public class Komentar extends Model {
 	public String dataKomentar;
 	@OneToOne(cascade = CascadeType.ALL)
 	public User user;
+	@Column
+	public Calendar time;
 	@JsonIgnore
 	@ManyToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;

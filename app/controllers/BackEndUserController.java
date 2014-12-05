@@ -118,12 +118,11 @@ public class BackEndUserController extends Controller implements Constants {
 		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
 		    	String gcmId = requestHandler.getStringValue("gcmId");
 		    	
-		    	String query = "update user set gcm_id=:gcm_id where id_user=:id";
+		    	String query = "update user set gcm_id=:gcm_id where id_user=:id_user";
 		    	SqlUpdate update = Ebean.createSqlUpdate(query)
 		    			.setParameter("gcm_id", gcmId)
-		    			.setParameter("id", user.idUser);
+		    			.setParameter("id_user", user.idUser);
 		    	update.execute();
-//		    	user.save();
 		    	return ok(JsonHandler.getSuitableResponse("success update user", true));
 			}
 		});
@@ -356,14 +355,17 @@ public class BackEndUserController extends Controller implements Constants {
 		    	}
 		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
 		    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
-//		    	laporan.tambahUserPemantau(userPemantau);
-//		    	laporan.update();
-		    	String query = "insert into user_laporan (user_id_user, laporan_id_laporan) values (:user_id, :laporan_id)";
-		    	SqlUpdate cs = Ebean.createSqlUpdate(query)
-		    			.setParameter("user_id",  userPemantau.idUser)
-		    			.setParameter("laporan_id", laporan.idLaporan);
-		    	cs.execute();
+		    	
+		    	laporan.jumlahUserPemantau++;
+		    	String updateQuery = "update laporan set jumlah_user_pemantau="+laporan.jumlahUserPemantau+" where id_laporan="+laporan.idLaporan+"";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(updateQuery);
+		    	sqlUpdate.execute();
+		    	
+		    	String insertQuery = "insert into user_laporan (user_id_user, laporan_id_laporan) values ("+userPemantau.idUser+", "+laporan.idLaporan+")";
+		    	SqlUpdate sqlInsert = Ebean.createSqlUpdate(insertQuery);
+		    	sqlInsert.execute();
 		    	laporan.pantau = true;
+		    	
 		    	return ok(JsonHandler.getSuitableResponse(laporan, true));
 			}
 		});
@@ -388,14 +390,15 @@ public class BackEndUserController extends Controller implements Constants {
 		    	}
 		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
 		    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
-//		    	laporan.hapusUserPemantau(userPemantau);
-//		    	Ebean.save(laporan);
-		    	String query = "delete from user_laporan where user_id_user:user_id, laporan_id_laporan:laporan_id)";
-		    	SqlUpdate cs = Ebean.createSqlUpdate(query)
-		    			.setParameter("user_id",  userPemantau.idUser)
-		    			.setParameter("laporan_id", laporan.idLaporan);
-		    	cs.execute();
-		    	laporan.pantau = true;
+		    	
+		    	laporan.jumlahUserPemantau--;
+		    	String updateQuery = "update laporan set jumlah_user_pemantau="+laporan.jumlahUserPemantau+" where id_laporan="+laporan.idLaporan+"";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(updateQuery);
+		    	sqlUpdate.execute();
+		    	
+		    	String deleteQuery = "delete from user_laporan where user_id_user = "+userPemantau.idUser+" and laporan_id_laporan = "+laporan.idLaporan+"";
+		    	SqlUpdate sqlInsert = Ebean.createSqlUpdate(deleteQuery);
+		    	sqlInsert.execute();
 		    	laporan.pantau = false;
 		    	return ok(JsonHandler.getSuitableResponse(laporan, true));
 			}
@@ -454,8 +457,9 @@ public class BackEndUserController extends Controller implements Constants {
 		    	komentar.user = User.finder.byId(requestHandler.getLongValue("userId"));
 		    	komentar.dataKomentar = requestHandler.getStringValue("dataKomentar");
 		    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
-		    	komentar.laporan.tambahKomentar(komentar);
-		    	komentar.laporan.update();
+		    	komentar.time = Calendar.getInstance();
+		    	komentar.save();
+		    	
 		    	return ok(JsonHandler.getSuitableResponse(komentar, true));
 			}
 		});
@@ -515,11 +519,35 @@ public class BackEndUserController extends Controller implements Constants {
 		    	if(user == null || userFollow == null){
 		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
 		    	}
-		    	userFollow.listFollowerUser.add(user);
-		    	userFollow.jumlahFollowerUser++;
-		    	userFollow.update();
+		    	
 		    	user.jumlahFollowingUser++;
-		    	user.update();
+		    	userFollow.jumlahFollowerUser++;
+		    	String insertQuery = "insert into follower_user (follower_user_id, following_user_id) values (:follower_user_id, :following_user_id)";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(insertQuery)
+		    			.setParameter("follower_user_id", user.idUser)
+		    			.setParameter("following_user_id", userFollow.idUser);
+		    	sqlUpdate.execute();
+		    	
+		    	String updateQuery = "update user set "
+		    			+ "jumlah_follower_user =:jumlah_follower_user, "
+		    			+ "jumlah_following_user =:jumlah_following_user where"
+		    			+ " id_user=:id_user";
+		    	SqlUpdate sqlUpdate2 = Ebean.createSqlUpdate(updateQuery)
+		    			.setParameter("jumlah_follower_user", user.jumlahFollowerUser)
+		    			.setParameter("jumlah_following_user", user.jumlahFollowingUser)
+		    			.setParameter("id_user", user.idUser);
+		    	sqlUpdate2.execute();
+		    	sqlUpdate2 = Ebean.createSqlUpdate(updateQuery)
+		    			.setParameter("jumlah_follower_user", userFollow.jumlahFollowerUser)
+		    			.setParameter("jumlah_following_user", userFollow.jumlahFollowingUser)
+		    			.setParameter("id_user", userFollow.idUser);
+		    	sqlUpdate2.execute();
+		    	
+//		    	userFollow.listFollowerUser.add(user);
+//		    	userFollow.jumlahFollowerUser++;
+//		    	userFollow.update();
+//		    	user.jumlahFollowingUser++;
+//		    	user.update();
 		    	return ok(JsonHandler.getSuitableResponse("success follow", true));
 			}
 		});
@@ -548,12 +576,36 @@ public class BackEndUserController extends Controller implements Constants {
 		    	if(user == null || userFollow == null){
 		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
 		    	}
-		    	userFollow.listFollowerUser.remove(user);
-		    	userFollow.jumlahFollowerUser--;
-		    	userFollow.update();
-		    	user.listFollowingUser.remove(userFollow);
+		    	
 		    	user.jumlahFollowingUser--;
-		    	user.update();
+		    	userFollow.jumlahFollowerUser--;
+		    	String insertQuery = "delete from follower_user where follower_user_id =:follower_user_id and following_user_id=:following_user_id";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(insertQuery)
+		    			.setParameter("follower_user_id", user.idUser)
+		    			.setParameter("following_user_id", userFollow.idUser);
+		    	sqlUpdate.execute();
+		    	
+		    	String updateQuery = "update user set "
+		    			+ "jumlah_follower_user =:jumlah_follower_user, "
+		    			+ "jumlah_following_user =:jumlah_following_user where"
+		    			+ " id_user=:id_user";
+		    	SqlUpdate sqlUpdate2 = Ebean.createSqlUpdate(updateQuery)
+		    			.setParameter("jumlah_follower_user", user.jumlahFollowerUser)
+		    			.setParameter("jumlah_following_user", user.jumlahFollowingUser)
+		    			.setParameter("id_user", user.idUser);
+		    	sqlUpdate2.execute();
+		    	sqlUpdate2 = Ebean.createSqlUpdate(updateQuery)
+		    			.setParameter("jumlah_follower_user", userFollow.jumlahFollowerUser)
+		    			.setParameter("jumlah_following_user", userFollow.jumlahFollowingUser)
+		    			.setParameter("id_user", userFollow.idUser);
+		    	sqlUpdate2.execute();
+		    	
+//		    	userFollow.listFollowerUser.remove(user);
+//		    	userFollow.jumlahFollowerUser--;
+//		    	userFollow.update();
+//		    	user.listFollowingUser.remove(userFollow);
+//		    	user.jumlahFollowingUser--;
+//		    	user.update();
 		    	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
 			}
 		});
@@ -586,7 +638,7 @@ public class BackEndUserController extends Controller implements Constants {
 		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(query)
 		    			.setParameter("status", status)
 		    			.setParameter("id", user.idUser);
-		    	int i = sqlUpdate.execute();
+		    	sqlUpdate.execute();
 		    	
 //		    	user.update();
 		    	return ok(JsonHandler.getSuitableResponse("success update status", true));
@@ -651,14 +703,33 @@ public class BackEndUserController extends Controller implements Constants {
 		    		return badRequest(JsonHandler.getSuitableResponse("require image", false));
 		    	}
 		    	ImagePath oldUserImage = user.imageProfilePath;
-		    	
 		    	imagePath.keterangan = IM_MODIFED;
-		    	imagePath.save();
-		    	user.imageProfilePath = imagePath;
-		    	Ebean.save(user);
-		    	if(!oldUserImage.keterangan.equalsIgnoreCase(IM_DEFAULT_PROFILE)){
+		    	if(oldUserImage.keterangan.equalsIgnoreCase(IM_DEFAULT_PROFILE)){
+		    		imagePath.save();
+		    		String updateQuery = "update user set image_profile_path_id_image_path =:id_image "
+		    				+ "where id_user =:id_user";
+		    		SqlUpdate sqlUpdate = Ebean.createSqlUpdate(updateQuery)
+		    				.setParameter("id_image", imagePath.idImagePath)
+		    				.setParameter("id_user", user.idUser);
+		    		sqlUpdate.execute();
+		    	}
+		    	else {
+		    		String updateQuery = "update image_path set path=:path, "
+		    				+ "file_name=:file_name, "
+		    				+ "keterangan=:keterangan where "
+		    				+ "id_image_path=:id_image_path";
+		    		SqlUpdate sqlUpdate = Ebean.createSqlUpdate(updateQuery)
+		    				.setParameter("path", imagePath.path)
+		    				.setParameter("file_name", imagePath.fileName)
+		    				.setParameter("keterangan", imagePath.keterangan)
+		    				.setParameter("id_image_path", oldUserImage.idImagePath);
+		    		sqlUpdate.execute();
 		    		ImagePath.deleteImage(oldUserImage);
 		    	}
+//		    	
+//		    	user.imageProfilePath = imagePath;
+//		    	Ebean.save(user);
+		    	user = User.finder.byId(requestHandler.getLongValue("userId"));
 		    	return ok(JsonHandler.getSuitableResponse(user, true));
 			}
 		});
@@ -722,7 +793,12 @@ public class BackEndUserController extends Controller implements Constants {
 		    	}
 		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
 		    	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
-		    	laporan.update();
+//		    	laporan.update();
+		    	String updateQuery = "update laporan set viwer=:viewer where id_laporan=:id_laporan";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(updateQuery)
+		    			.setParameter("viewer", laporan.viwer)
+		    			.setParameter("id_laporan", laporan.idLaporan);
+		    	sqlUpdate.execute();
 		    	return ok(JsonHandler.getSuitableResponse("success add view", true));
 			}
 		});

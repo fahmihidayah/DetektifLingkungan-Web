@@ -22,6 +22,7 @@ create table komentar (
   id_komentar               bigint auto_increment not null,
   data_komentar             varchar(255),
   user_id_user              bigint,
+  time                      datetime,
   laporan_id_laporan        bigint,
   constraint pk_komentar primary key (id_komentar))
 ;

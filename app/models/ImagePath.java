@@ -86,7 +86,7 @@ public class ImagePath extends Model {
 	public static void deleteImage(ImagePath imagePath){
 		File file = new File(Play.application().configuration().getString(PATH_IMAGE), imagePath.fileName);
     	file.delete();
-    	imagePath.delete();
+//    	imagePath.delete();
 	}
 	
 	
@@ -97,7 +97,7 @@ public class ImagePath extends Model {
 		}
 		File file = new File(Play.application().configuration().getString(PATH_IMAGE), imagePath.fileName);
     	file.delete();
-    	imagePath.delete();
+//    	imagePath.delete();
     	return "success delete image";
 	}
 	
