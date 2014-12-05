@@ -12,7 +12,12 @@ object ApplicationBuild extends Build {
 //      "org.scala-tools" %% "scala-stm" % "0.3",
 //      "org.apache.derby" % "derby" % "10.4.1.3" % "test"
       "mysql" % "mysql-connector-java" % "5.1.18",
-      "com.google.code.gson" % "gson" % "2.2.4"
+      "com.google.code.gson" % "gson" % "2.2.4",
+      "org.hibernate" % "hibernate-entitymanager" % "4.2.1.Final",
+      jdbc,
+    javaCore,
+    javaJdbc,
+    javaJpa
     // "org.apache.directory.studio" % "org.apache.commons.io" % "2.4"
     )
 

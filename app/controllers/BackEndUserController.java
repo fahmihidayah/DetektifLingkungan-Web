@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.sql.SQLInput;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,7 +13,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import com.avaje.ebean.CallableSql;
 import com.avaje.ebean.Ebean;
+import com.avaje.ebean.SqlUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
@@ -60,28 +63,39 @@ public class BackEndUserController extends Controller implements Constants {
      * login api.
      * require userName, password
      * @return
+     * 
+    public static Promise<Result>
      */
-    public static Result login(){
-    	String key[] = {"userName", "password"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		System.out.println("error 1");
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = Auth.findUser(requestHandler.getStringValue("userName"),
-    			requestHandler.getStringValue("password"));
-    	if(user == null){
-    		System.out.println("error 2");
-    		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
-    	}
-    	Auth auth = new Auth();
-    	auth.createToken();
-    	auth.save();
-    	ObjectNode data = Json.newObject();
-    	data.put("authKey", auth.authToken);
-    	data.put("user", Json.toJson(user));
-    	return ok(JsonHandler.getSuitableResponse(data, true));
+    public static Promise<Result> login(){
+    	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userName", "password"};
+		    	RequestHandler requestHandler = new RequestHandler(frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		System.out.println("error 1");
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = Auth.findUser(requestHandler.getStringValue("userName"),
+		    			requestHandler.getStringValue("password"));
+		    	if(user == null){
+		    		System.out.println("error 2");
+		    		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
+		    	}
+		    	Auth auth = new Auth();
+		    	auth.createToken();
+		    	auth.save();
+		    	ObjectNode data = Json.newObject();
+		    	data.put("authKey", auth.authToken);
+		    	data.put("user", Json.toJson(user));
+		    	return ok(JsonHandler.getSuitableResponse(data, true));
+			}
+		});
+    	return promise;
+    	
     }
     /**
      * update user gcm id api.
@@ -90,33 +104,53 @@ public class BackEndUserController extends Controller implements Constants {
      * userId, gcmId
      * @return
      */
-    public static Result updateGcmId(){
-    	String key[] = {"userId", "gcmId"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	user.gcmId = requestHandler.getStringValue("gcmId");
-    	user.save();
-    	return ok(JsonHandler.getSuitableResponse("success update user", true));
+    public static Promise<Result> updateGcmId(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "gcmId"};
+		    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	String gcmId = requestHandler.getStringValue("gcmId");
+		    	
+		    	String query = "update user set gcm_id=:gcm_id where id_user=:id";
+		    	SqlUpdate update = Ebean.createSqlUpdate(query)
+		    			.setParameter("gcm_id", gcmId)
+		    			.setParameter("id", user.idUser);
+		    	update.execute();
+//		    	user.save();
+		    	return ok(JsonHandler.getSuitableResponse("success update user", true));
+			}
+		});
+    	return promise;
     }    /**
      * logout api.
      * require authKey
      * @return
      */
-    public static Result logout(){
-    	String key[] = {"authKey"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	
-    	Auth auth = Auth.findAuth(requestHandler.getStringValue("authKey"));
-    	auth.delete();
-    	return ok(JsonHandler.getSuitableResponse("logout", true));
+    public static Promise<Result> logout(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"authKey"};
+		    	RequestHandler requestHandler = new RequestHandler(frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	
+		    	Auth auth = Auth.findAuth(requestHandler.getStringValue("authKey"));
+		    	auth.delete();
+		    	return ok(JsonHandler.getSuitableResponse("logout", true));
+			}
+		});
+    	return promise;
     }
     /**
      * register user api
@@ -125,20 +159,27 @@ public class BackEndUserController extends Controller implements Constants {
      * "password", "email"
      * @return
      */
-    public static Result registerUser(){
-    	String key[] = {"name", "userName", "password", "email"};
-    	RequestHandler requestHandler = new RequestHandler(frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = new User(requestHandler.getStringValue("userName"), 
-    			requestHandler.getStringValue("password"));
-    	user.name = requestHandler.getStringValue("name");
-    	user.email = requestHandler.getStringValue("email");
-    	user.imageProfilePath = ImagePath.finder.where().eq("keterangan", IM_DEFAULT_PROFILE).findUnique();
-    	user.save();
-    	return ok(JsonHandler.getSuitableResponse(user, true));
+    public static Promise<Result> registerUser(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"name", "userName", "password", "email"};
+		    	RequestHandler requestHandler = new RequestHandler(frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = new User(requestHandler.getStringValue("userName"), 
+		    			requestHandler.getStringValue("password"));
+		    	user.name = requestHandler.getStringValue("name");
+		    	user.email = requestHandler.getStringValue("email");
+		    	user.imageProfilePath = ImagePath.finder.where().eq("keterangan", IM_DEFAULT_PROFILE).findUnique();
+		    	user.save();
+		    	return ok(JsonHandler.getSuitableResponse(user, true));
+			}
+		});
+    	return promise;
     }
     /**
      * insert laporan.
@@ -149,29 +190,38 @@ public class BackEndUserController extends Controller implements Constants {
      * "latitude", "judulLaporan" 
      * @return
      */
-    public static Result insertLaporan(){
-    	String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "judulLaporan"/*, "time"*/};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
+    public static Promise<Result> insertLaporan(){
     	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"dataLaporan", "userId", "katagoriLaporan", "longitude", "latitude", "judulLaporan"/*, "time"*/};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	
+		    	
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	if(user == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
+		    	}
+		    	Laporan laporan = new Laporan();
+		    	laporan.user = user;
+		    	laporan.judulLaporan = requestHandler.getStringValue("judulLaporan");
+		    	laporan.dataLaporan = requestHandler.getStringValue("dataLaporan");
+		    	laporan.katagoriLaporan = requestHandler.getStringValue("katagoriLaporan");
+		    	laporan.longitude = requestHandler.getDoubleValue("longitude");
+		    	laporan.latitude = requestHandler.getDoubleValue("latitude");
+		    	laporan.time = Calendar.getInstance();
+		    	laporan.save();
+		    	return ok(JsonHandler.getSuitableResponse(laporan, true));
+			}
+		});
+    	return promise;
     	
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	if(user == null){
-    		return badRequest(JsonHandler.getSuitableResponse("User not found", false));
-    	}
-    	Laporan laporan = new Laporan();
-    	laporan.user = user;
-    	laporan.judulLaporan = requestHandler.getStringValue("judulLaporan");
-    	laporan.dataLaporan = requestHandler.getStringValue("dataLaporan");
-    	laporan.katagoriLaporan = requestHandler.getStringValue("katagoriLaporan");
-    	laporan.longitude = requestHandler.getDoubleValue("longitude");
-    	laporan.latitude = requestHandler.getDoubleValue("latitude");
-    	laporan.time = Calendar.getInstance();
-    	laporan.save();
-    	return ok(JsonHandler.getSuitableResponse(laporan, true));
     }
     /**
      * insert image laporan api.
@@ -183,30 +233,44 @@ public class BackEndUserController extends Controller implements Constants {
      * call this api as many as image count
      * @return
      */
-    public static Result insertLaporanImage(){
-    	String key[] = {"laporanId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+    public static Promise<Result> insertLaporanImage(){
     	
-    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
-    	imagePath.laporan= laporan; 	
-    	imagePath.keterangan = IM_LAPORAN;
-    	imagePath.save();
-    	laporan.listImagePath.add(imagePath);
-    	return ok(JsonHandler.getSuitableResponse("success insert image", true));
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"laporanId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+		    	
+		    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+		    	imagePath.laporan= laporan; 	
+		    	imagePath.keterangan = IM_LAPORAN;
+		    	imagePath.save();
+		    	laporan.listImagePath.add(imagePath);
+		    	return ok(JsonHandler.getSuitableResponse("success insert image", true));
+			}
+		});
+    	return promise;
     }
     
     /*
      * kekurangan - kurang difilter perbagian untuk diambil.
      * contoh 10 item terupdate berdasarkan tanggal.
      */
-    public static Result listLaporan(){
-    	List<Laporan> listLaporan = Laporan.finder.all();
-    	return ok(JsonHandler.getSuitableResponse(listLaporan, true));
+    public static Promise<Result> listLaporan(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				List<Laporan> listLaporan = Laporan.finder.all();
+		    	return ok(JsonHandler.getSuitableResponse(listLaporan, true));
+			}
+		});
+    	return promise;
     }
     
     /**
@@ -220,46 +284,58 @@ public class BackEndUserController extends Controller implements Constants {
      * laporanId
      * @return
      */
-    public static Result getListLaporan(){
-    	String key[] = {"userId","type"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	requestHandler.checkError();
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	String type = requestHandler.getStringValue("type");
-    	Laporan laporan = null;
-    	if(type.equalsIgnoreCase("h") || type.equalsIgnoreCase("l")){
-    		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("laporanId"));
-    		if(laporan == null){
-    			return badRequest(JsonHandler.getSuitableResponse("laporan not found", false));
-    		}
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	
-    	List<Laporan> listUpdateLaporan = null; 
-    	
-    	if(type.equalsIgnoreCase("h")){
-    		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime())/*.order("time desc")*/.findList();
-    	}
-    	else if (type.equalsIgnoreCase("l")){
-    		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
-    	}
-    	else if(type.equalsIgnoreCase("o")){
-    		listUpdateLaporan = Laporan.finder.where().eq("user_id_user", requestHandler.getLongValue("userId") + "").order("time desc").setMaxRows(5).findList();
-    	}
-    	else {
-    		listUpdateLaporan = Laporan.finder.where().order("time desc")/*.setMaxRows(5)*/.findList();
-    	}
-    	
-    	for (Laporan eLaporan : listUpdateLaporan) {
-			if(eLaporan.listUserPemantau.contains(user)){
-				eLaporan.pantau = true;
+    public static Promise<Result> getListLaporan(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId","type"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	requestHandler.checkError();
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	String type = requestHandler.getStringValue("type");
+		    	Laporan laporan = null;
+		    	if(type.equalsIgnoreCase("h") || type.equalsIgnoreCase("l")){
+		    		laporan = Laporan.finder.byId(requestHandler.getOptionalLongValue("laporanId"));
+		    		if(laporan == null){
+		    			return badRequest(JsonHandler.getSuitableResponse("laporan not found", false));
+		    		}
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	
+		    	List<Laporan> listUpdateLaporan = null; 
+		    	
+		    	if(type.equalsIgnoreCase("h")){
+		    		listUpdateLaporan = Laporan.finder.where().gt("time", laporan.time.getTime())/*.order("time desc")*/.findList();
+		    		
+		    	}
+		    	else if (type.equalsIgnoreCase("l")){
+		    		listUpdateLaporan = Laporan.finder.where().lt("time", laporan.time.getTime()).order("time desc").setMaxRows(2).findList();
+		    	}
+		    	else if(type.equalsIgnoreCase("o")){
+		    		listUpdateLaporan = Laporan.finder.where().eq("user_id_user", requestHandler.getLongValue("userId") + "").order("time desc").setMaxRows(5).findList();
+		    	}
+		    	else {
+		    		listUpdateLaporan = Laporan.finder.where().order("time desc")/*.setMaxRows(5)*/.findList();
+		    	}
+		    	
+		    	for (Laporan eLaporan : listUpdateLaporan) {
+					if(eLaporan.listUserPemantau.contains(user)){
+						eLaporan.pantau = true;
+					}
+				}
+		    	
+		    	for (Laporan laporan2 : listUpdateLaporan) {
+					User user2 = User.finder.byId(laporan2.user.idUser);
+					laporan2.user = user2;
+				}
+		    	
+		    	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
 			}
-		}
-    	
-    	return ok(JsonHandler.getSuitableResponse(listUpdateLaporan, true));
+		});
+    	return promise;
     }
     /**
      * pantau api.
@@ -268,19 +344,30 @@ public class BackEndUserController extends Controller implements Constants {
      * "userId", "laporanId"
      * @return
      */
-    public static Result pantau(){
-    	String key[] = {"userId", "laporanId"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
-    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
-    	laporan.tambahUserPemantau(userPemantau);
-    	laporan.update();
-    	laporan.pantau = true;
-    	return ok(JsonHandler.getSuitableResponse(laporan, true));
+    public static Promise<Result> pantau(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "laporanId"};
+		    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+		    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
+//		    	laporan.tambahUserPemantau(userPemantau);
+//		    	laporan.update();
+		    	String query = "insert into user_laporan (user_id_user, laporan_id_laporan) values (:user_id, :laporan_id)";
+		    	SqlUpdate cs = Ebean.createSqlUpdate(query)
+		    			.setParameter("user_id",  userPemantau.idUser)
+		    			.setParameter("laporan_id", laporan.idLaporan);
+		    	cs.execute();
+		    	laporan.pantau = true;
+		    	return ok(JsonHandler.getSuitableResponse(laporan, true));
+			}
+		});
+    	return promise;
     }
     /**
      * unpantau api.
@@ -289,19 +376,33 @@ public class BackEndUserController extends Controller implements Constants {
      * "userId", "laporanId"
      * @return
      */
-    public static Result unpantau(){
-    	String key[] = {"userId", "laporanId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
-    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
-    	laporan.hapusUserPemantau(userPemantau);
-    	Ebean.save(laporan);
-    	laporan.pantau = false;
-    	return ok(JsonHandler.getSuitableResponse(laporan, true));
+    public static Promise<Result> unpantau(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "laporanId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+		    	User userPemantau = User.finder.byId(requestHandler.getLongValue("userId"));
+//		    	laporan.hapusUserPemantau(userPemantau);
+//		    	Ebean.save(laporan);
+		    	String query = "delete from user_laporan where user_id_user:user_id, laporan_id_laporan:laporan_id)";
+		    	SqlUpdate cs = Ebean.createSqlUpdate(query)
+		    			.setParameter("user_id",  userPemantau.idUser)
+		    			.setParameter("laporan_id", laporan.idLaporan);
+		    	cs.execute();
+		    	laporan.pantau = true;
+		    	laporan.pantau = false;
+		    	return ok(JsonHandler.getSuitableResponse(laporan, true));
+			}
+		});
+    	return promise;
+    	
+    	
     }
     /**
      * list komentar api.
@@ -309,15 +410,25 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, laporanId
      * @return
      */
-    public static Result listKomentar(){
-    	String key[] = {"laporanId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan_id_laporan", requestHandler.getStringValue("laporanId")).findList();
-    	return ok(JsonHandler.getSuitableResponse(listKomentar, true));
+    public static Promise<Result> listKomentar(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"laporanId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	List<Komentar> listKomentar = Komentar.finder.where().eq("laporan_id_laporan", requestHandler.getStringValue("laporanId")).findList();
+		    	for (Komentar komentar : listKomentar) {
+					User user = User.finder.byId(komentar.user.idUser);
+					komentar.user = user;
+				}
+		    	return ok(JsonHandler.getSuitableResponse(listKomentar, true));
+			}
+		});
+    	return promise;
     }
     
     /**
@@ -328,20 +439,28 @@ public class BackEndUserController extends Controller implements Constants {
      * @return
      */
     
-    public static Result insertKomentar(){
-    	String key[] = {"laporanId", "dataKomentar", "userId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	Komentar komentar = new Komentar();
-    	komentar.user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	komentar.dataKomentar = requestHandler.getStringValue("dataKomentar");
-    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
-    	komentar.laporan.tambahKomentar(komentar);
-    	komentar.laporan.update();
-    	return ok(JsonHandler.getSuitableResponse(komentar, true));
+    public static Promise<Result> insertKomentar(){
+    	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"laporanId", "dataKomentar", "userId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	Komentar komentar = new Komentar();
+		    	komentar.user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	komentar.dataKomentar = requestHandler.getStringValue("dataKomentar");
+		    	komentar.laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+		    	komentar.laporan.tambahKomentar(komentar);
+		    	komentar.laporan.update();
+		    	return ok(JsonHandler.getSuitableResponse(komentar, true));
+			}
+		});
+    	return promise;
+    	
     }
     /**
      * get user profile api.
@@ -349,22 +468,30 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, userId, followerUserId
      * @return
      */
-    public static Result getUserProfile(){
-    	String key[] = {"userId","followerUserId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	User userFollower = User.finder.byId(requestHandler.getLongValue("followerUserId"));
-    	if(user == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
+    public static Promise<Result> getUserProfile(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId","followerUserId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	User userFollower = User.finder.byId(requestHandler.getLongValue("followerUserId"));
+		    	if(user == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+		    	}
+		    	
+		    	user.isFollowing = user.listFollowerUser.contains(userFollower);
+		    	    
+		    	return ok(JsonHandler.getSuitableResponse(user, true));
+			}
+		});
+    	return promise;
     	
-    	user.isFollowing = user.listFollowerUser.contains(userFollower);
-    	    
-    	return ok(JsonHandler.getSuitableResponse(user, true));
+    	
     }
     /**
      * follow api.
@@ -372,24 +499,33 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey,  userId, followerUserId
      * @return
      */
-    public static Result follow(){
-    	String key[] = {"userId", "followedUserId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
-    	if(user == null || userFollow == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
-    	userFollow.listFollowerUser.add(user);
-    	userFollow.jumlahFollowerUser++;
-    	userFollow.update();
-    	user.jumlahFollowingUser++;
-    	user.update();
-    	return ok(JsonHandler.getSuitableResponse("success follow", true));
+    public static Promise<Result> follow(){
+    	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "followedUserId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
+		    	if(user == null || userFollow == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+		    	}
+		    	userFollow.listFollowerUser.add(user);
+		    	userFollow.jumlahFollowerUser++;
+		    	userFollow.update();
+		    	user.jumlahFollowingUser++;
+		    	user.update();
+		    	return ok(JsonHandler.getSuitableResponse("success follow", true));
+			}
+		});
+    	return promise;
+    	
+    	
     }
     /**
      * unfollow api.
@@ -397,25 +533,33 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, userId, followerUserId
      * @return
      */
-    public static Result unfollow(){
-    	String key[] = {"userId", "followedUserId"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
-    	if(user == null || userFollow == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
-    	userFollow.listFollowerUser.remove(user);
-    	userFollow.jumlahFollowerUser--;
-    	userFollow.update();
-    	user.listFollowingUser.remove(userFollow);
-    	user.jumlahFollowingUser--;
-    	user.update();
-    	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
+    public static Promise<Result> unfollow(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "followedUserId"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	User userFollow = User.finder.byId(requestHandler.getLongValue("followedUserId"));
+		    	if(user == null || userFollow == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+		    	}
+		    	userFollow.listFollowerUser.remove(user);
+		    	userFollow.jumlahFollowerUser--;
+		    	userFollow.update();
+		    	user.listFollowingUser.remove(userFollow);
+		    	user.jumlahFollowingUser--;
+		    	user.update();
+		    	return ok(JsonHandler.getSuitableResponse("success unfollow", true));
+			}
+		});
+    	return promise;
+    	
+    	
     }
     /**
      * change status api
@@ -423,20 +567,32 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, userId, status
      * @return
      */
-    public static Result changeStatus(){
-    	String key[] = {"userId", "status"};
-    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	if(user == null ){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
-    	user.status = requestHandler.getStringValue("status");
-    	user.update();
-    	return ok(JsonHandler.getSuitableResponse("success update status", true));
+    public static Promise<Result> changeStatus(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "status"};
+		    	RequestHandler requestHandler = new RequestHandler(true,frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	if(user == null ){
+		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+		    	}
+		    	String status = requestHandler.getStringValue("status");
+		    	String query = "update user set status=:status where id_user=:id";
+		    	SqlUpdate sqlUpdate = Ebean.createSqlUpdate(query)
+		    			.setParameter("status", status)
+		    			.setParameter("id", user.idUser);
+		    	int i = sqlUpdate.execute();
+		    	
+//		    	user.update();
+		    	return ok(JsonHandler.getSuitableResponse("success update status", true));
+			}
+		});
+    	return promise;    	
     }
     
     
@@ -478,26 +634,37 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, userId, picture 
      * @return
      */
-    public static Result changeProfilePicture(){
-    	String [] key = {"userId"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
-    	if(imagePath == null){
-    		return badRequest(JsonHandler.getSuitableResponse("require image", false));
-    	}
-    	if(!user.imageProfilePath.keterangan.equalsIgnoreCase(IM_DEFAULT_PROFILE)){
-    		ImagePath.deleteImage(user.imageProfilePath);
-    	}
-    	imagePath.keterangan = IM_MODIFED;
-    	imagePath.save();
-    	user.imageProfilePath = imagePath;
-    	user.update();
-    	return ok(JsonHandler.getSuitableResponse(user, true));
+    public static Promise<Result> changeProfilePicture(){
+    	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String [] key = {"userId"};
+		    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	ImagePath imagePath = ImagePath.setImageFromRequest("picture");
+		    	if(imagePath == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("require image", false));
+		    	}
+		    	ImagePath oldUserImage = user.imageProfilePath;
+		    	
+		    	imagePath.keterangan = IM_MODIFED;
+		    	imagePath.save();
+		    	user.imageProfilePath = imagePath;
+		    	Ebean.save(user);
+		    	if(!oldUserImage.keterangan.equalsIgnoreCase(IM_DEFAULT_PROFILE)){
+		    		ImagePath.deleteImage(oldUserImage);
+		    	}
+		    	return ok(JsonHandler.getSuitableResponse(user, true));
+			}
+		});
+    	return promise;
+    	
+    	
     }
     
     /**
@@ -508,24 +675,33 @@ public class BackEndUserController extends Controller implements Constants {
      * mode 1 = following
      * @return
      */
-    public static Result getFollower(){
-    	String key[] = {"userId", "mode"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
-    	}
-    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
-    	String mode = requestHandler.getStringValue("mode");
-    	if(user == null){
-    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
-    	}
-    	if(mode.equalsIgnoreCase("0")){
-    		return ok(JsonHandler.getSuitableResponse(user.getListFollowerUser(), true));	
-    	}
-    	else {
-    		return ok(JsonHandler.getSuitableResponse(user.getListFollowingUser(), true)); 
-    	}
+    public static Promise<Result> getFollower(){
+    	
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"userId", "mode"};
+		    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		    	}
+		    	User user = User.finder.byId(requestHandler.getLongValue("userId"));
+		    	String mode = requestHandler.getStringValue("mode");
+		    	if(user == null){
+		    		return badRequest(JsonHandler.getSuitableResponse("user not found", false));
+		    	}
+		    	if(mode.equalsIgnoreCase("0")){
+		    		return ok(JsonHandler.getSuitableResponse(user.getListFollowerUser(), true));	
+		    	}
+		    	else {
+		    		return ok(JsonHandler.getSuitableResponse(user.getListFollowingUser(), true)); 
+		    	}
+			}
+		});
+    	return promise;
+    	
+    	
     }
     
     /**
@@ -534,17 +710,24 @@ public class BackEndUserController extends Controller implements Constants {
      * authKey, laporanId;
      * @return
      */
-    public static Result viewLaporan(){
-    	String key[] = {"laporanId"};
-    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
-    	requestHandler.setArrayKey(key);
-    	if(requestHandler.isContainError()){
-    		return ok(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(),false));
-    	}
-    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
-    	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
-    	laporan.update();
-    	return ok(JsonHandler.getSuitableResponse("success add view", true));
+    public static Promise<Result> viewLaporan(){
+    	Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"laporanId"};
+		    	RequestHandler requestHandler = new RequestHandler(true, frmUser);
+		    	requestHandler.setArrayKey(key);
+		    	if(requestHandler.isContainError()){
+		    		return ok(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(),false));
+		    	}
+		    	Laporan laporan = Laporan.finder.byId(requestHandler.getLongValue("laporanId"));
+		    	laporan.viwer= laporan.viwer.add(new BigInteger("1"));
+		    	laporan.update();
+		    	return ok(JsonHandler.getSuitableResponse("success add view", true));
+			}
+		});
+    	return promise;
+    	
     }
     /**
      * send message api.

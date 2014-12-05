@@ -34,7 +34,7 @@ public class Laporan extends Model {
 	public String dataLaporan;
 	@OneToOne(cascade = CascadeType.ALL)
 	public Tanggapan tanggapan;
-	@OneToOne(cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	public User user;
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL)
