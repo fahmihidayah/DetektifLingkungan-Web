@@ -346,7 +346,11 @@ public class BackEndUserController extends Controller implements Constants {
 							.eq("user_id_user",
 									requestHandler.getLongValue("userId") + "")
 							.order("time desc").setMaxRows(5).findList();
-				} else {
+				} else if (type.equalsIgnoreCase("d")){
+					listUpdateLaporan = Laporan.finder.where().order("jumlah_user_pemantau desc").setMaxRows(5).findList();
+				}
+				
+				else {
 					listUpdateLaporan = Laporan.finder.where()
 							.order("time desc")/* .setMaxRows(5) */.findList();
 				}
@@ -567,8 +571,8 @@ public class BackEndUserController extends Controller implements Constants {
 							"user not found", false));
 				}
 				String selectQuery = "select * "
-						+ "from follower_user where follower_user_id="+userFollower.idUser+""
-						+ " and following_user_id="+user.idUser+"";
+						+ "from follower_user where follower_user_id="+user.idUser+""
+						+ " and following_user_id="+ userFollower.idUser+"";
 				SqlRow sqlRow = Ebean.createSqlQuery(selectQuery)
 						.findUnique();
 				if (sqlRow != null) {
