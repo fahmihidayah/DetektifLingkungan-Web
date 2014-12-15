@@ -45,8 +45,10 @@ create table laporan (
 
 create table notif (
   id_notif                  bigint auto_increment not null,
+  notif_info                varchar(255),
   laporan_id_laporan        bigint,
   time                      datetime,
+  type_notif                varchar(255),
   user_id_user              bigint,
   constraint pk_notif primary key (id_notif))
 ;
@@ -84,7 +86,7 @@ create table user (
   name                      varchar(255),
   email                     varchar(255),
   status                    varchar(255),
-  jumlah_follower_user      integer,
+  jumlah_followed_user      integer,
   jumlah_following_user     integer,
   image_profile_path_id_image_path bigint,
   gcm_id                    varchar(255),
@@ -100,9 +102,9 @@ create table user_laporan (
 ;
 
 create table follower_user (
-  follower_user_id               bigint not null,
+  followed_user_id               bigint not null,
   following_user_id              bigint not null,
-  constraint pk_follower_user primary key (follower_user_id, following_user_id))
+  constraint pk_follower_user primary key (followed_user_id, following_user_id))
 ;
 alter table image_path add constraint fk_image_path_laporan_1 foreign key (laporan_id_laporan) references laporan (id_laporan) on delete restrict on update restrict;
 create index ix_image_path_laporan_1 on image_path (laporan_id_laporan);
@@ -135,7 +137,7 @@ alter table user_laporan add constraint fk_user_laporan_user_01 foreign key (use
 
 alter table user_laporan add constraint fk_user_laporan_laporan_02 foreign key (laporan_id_laporan) references laporan (id_laporan) on delete restrict on update restrict;
 
-alter table follower_user add constraint fk_follower_user_user_01 foreign key (follower_user_id) references user (id_user) on delete restrict on update restrict;
+alter table follower_user add constraint fk_follower_user_user_01 foreign key (followed_user_id) references user (id_user) on delete restrict on update restrict;
 
 alter table follower_user add constraint fk_follower_user_user_02 foreign key (following_user_id) references user (id_user) on delete restrict on update restrict;
 

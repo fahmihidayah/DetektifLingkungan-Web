@@ -19,14 +19,23 @@ public class Notif extends Model {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long idNotif;
+	
+	@Column
+	public String notifInfo;
+	
 	@OneToOne(cascade = CascadeType.ALL)
 	public Laporan laporan;
+	
 	@Column
 	public Calendar time;
 	
-	@JsonIgnore
+	@Column
+	public String typeNotif;
+	
 	@ManyToOne(cascade = CascadeType.ALL)
 	public User user;
+	
+	
 	
 	public static Finder<Long, Notif> finder = new Finder<>(Long.class, Notif.class);
 }

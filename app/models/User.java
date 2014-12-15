@@ -66,18 +66,18 @@ public class User extends Model {
 	// pilih salah satu (masih dalam tahap riset)
 	@JsonIgnore
 	@ManyToMany(mappedBy = "listFollowingUser")
-	public List<User> listFollowerUser = new ArrayList<User>();
+	public List<User> listFollowedUser = new ArrayList<User>();
 	@JsonIgnore
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(
 			name = "follower_user",
-			joinColumns = @JoinColumn(name = "follower_user_id"),
+			joinColumns = @JoinColumn(name = "followed_user_id"),
 			inverseJoinColumns = @JoinColumn(name = "following_user_id")
 			)
 	public List<User> listFollowingUser = new ArrayList<User>();
 	
 	@Column
-	public Integer jumlahFollowerUser = 0;
+	public Integer jumlahFollowedUser = 0;
 	@Column
 	public Integer jumlahFollowingUser = 0;
 	
@@ -108,17 +108,17 @@ public class User extends Model {
         this.password = password;
         shaPassword = getSha512(password);
     }
-
+    @JsonIgnore
     public List<User> getListFollowerUser() {
-    	for (User user : listFollowerUser) {
+    	for (User user : listFollowedUser) {
 			user.isFollowing = true;
 		}
-		return listFollowerUser;
+		return listFollowedUser;
 	}
     
     public List<User> getListFollowingUser() {
     	for (User user : listFollowingUser) {
-    		if(this.listFollowerUser.contains(user)){
+    		if(this.listFollowedUser.contains(user)){
     			user.isFollowing = true;	
     		}
 		}

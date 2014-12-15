@@ -22,4 +22,7 @@ public interface Constants {
 	public static String STATUS_PENDING = "PENDING";
 	public static String STATUS_DELIVER = "DELIVER";
 	public static String STATUS_UNREAD = "UNREAD";
+	
+	public static String TYPE_LAPORAN = "laporan";
+	public static String TYPE_USER 	= "user";
 }

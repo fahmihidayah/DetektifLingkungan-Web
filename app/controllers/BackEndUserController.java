@@ -9,12 +9,17 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import com.avaje.ebean.CallableSql;
 import com.avaje.ebean.Ebean;
+import com.avaje.ebean.Query;
+import com.avaje.ebean.RawSql;
+import com.avaje.ebean.RawSqlBuilder;
 import com.avaje.ebean.SqlRow;
 import com.avaje.ebean.SqlUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,9 +36,11 @@ import models.Auth;
 import models.ImagePath;
 import models.Komentar;
 import models.Laporan;
+import models.Notif;
 import models.PrivateMessage;
 import models.ServerAddress;
 import models.User;
+import models.UserLaporan;
 import fahmi.lib.Constants;
 import fahmi.lib.JsonHandler;
 import fahmi.lib.RequestHandler;
@@ -54,6 +61,9 @@ import views.html.*;
  * 
  * @author fahmi catatan : untuk perubahan data pada laporan seperti tanggapan
  *         komentar dsb.
+ *         
+ *         catatan : untuk semua table follower_user harus diubah nama table nya jadi 
+ *         followed user id dan following user id
  */
 public class BackEndUserController extends Controller implements Constants {
 	public static Form<User> frmUser = Form.form(User.class);
@@ -295,7 +305,7 @@ public class BackEndUserController extends Controller implements Constants {
 	}
 
 	/**
-	 * get list laporan api. require authKey "userId" "type" h, l, f
+	 * get list laporan api. require authKey "userId" "type" h, l, f, d
 	 * 
 	 * option laporanId
 	 * 
@@ -417,7 +427,8 @@ public class BackEndUserController extends Controller implements Constants {
 				SqlUpdate sqlInsert = Ebean.createSqlUpdate(insertQuery);
 				sqlInsert.execute();
 				laporan.pantau = true;
-
+				createNotif(laporan, userPemantau, userPemantau.name + " memantau laporan " + laporan.judulLaporan, TYPE_LAPORAN);
+//				createNotif(laporan, userPemantau, userPemantau.name +" memantau ");
 				return ok(JsonHandler.getSuitableResponse(laporan, true));
 			}
 		});
@@ -519,13 +530,15 @@ public class BackEndUserController extends Controller implements Constants {
 					return badRequest(JsonHandler.getSuitableResponse(
 							requestHandler.getErrorMessage(), false));
 				}
-				Komentar komentar = new Komentar();
-				komentar.user = User.finder.byId(requestHandler
+				Laporan laporan = Laporan.finder.byId(requestHandler
+						.getLongValue("laporanId"));
+				User user = User.finder.byId(requestHandler
 						.getLongValue("userId"));
+				Komentar komentar = new Komentar();
+				komentar.user = user;
 				komentar.dataKomentar = requestHandler
 						.getStringValue("dataKomentar");
-				komentar.laporan = Laporan.finder.byId(requestHandler
-						.getLongValue("laporanId"));
+				komentar.laporan = laporan;
 				komentar.time = Calendar.getInstance();
 				komentar.save();
 				komentar.laporan.jumlahKomentar++;
@@ -537,7 +550,7 @@ public class BackEndUserController extends Controller implements Constants {
 								komentar.laporan.jumlahKomentar)
 						.setParameter("id_laporan", komentar.laporan.idLaporan);
 				sqlUpdate.execute();
-
+				createNotif(laporan, user, user.name + " mengomentari laporan " + laporan.judulLaporan, TYPE_LAPORAN);
 				return ok(JsonHandler.getSuitableResponse(komentar, true));
 			}
 		});
@@ -548,13 +561,14 @@ public class BackEndUserController extends Controller implements Constants {
 	/**
 	 * get user profile api. require authKey, userId, followerUserId
 	 * 
+	 * error
 	 * @return
 	 */
 	public static Promise<Result> getUserProfile() {
 		Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
 			@Override
 			public Result apply() throws Throwable {
-				String key[] = { "userId", "followerUserId" };
+				String key[] = { "userId", "followingUserId" };
 				RequestHandler requestHandler = new RequestHandler(true,
 						frmUser);
 				requestHandler.setArrayKey(key);
@@ -565,13 +579,13 @@ public class BackEndUserController extends Controller implements Constants {
 				User user = User.finder.byId(requestHandler
 						.getLongValue("userId"));
 				User userFollower = User.finder.byId(requestHandler
-						.getLongValue("followerUserId"));
+						.getLongValue("followingUserId"));
 				if (user == null) {
 					return badRequest(JsonHandler.getSuitableResponse(
 							"user not found", false));
 				}
 				String selectQuery = "select * "
-						+ "from follower_user where follower_user_id="+user.idUser+""
+						+ "from follower_user where followed_user_id="+user.idUser+""
 						+ " and following_user_id="+ userFollower.idUser+"";
 				SqlRow sqlRow = Ebean.createSqlQuery(selectQuery)
 						.findUnique();
@@ -596,7 +610,7 @@ public class BackEndUserController extends Controller implements Constants {
 		Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
 			@Override
 			public Result apply() throws Throwable {
-				String key[] = { "userId", "followedUserId" };
+				String key[] = {"followedUserId", "followingUserId" };
 				RequestHandler requestHandler = new RequestHandler(true,
 						frmUser);
 				requestHandler.setArrayKey(key);
@@ -604,42 +618,44 @@ public class BackEndUserController extends Controller implements Constants {
 					return badRequest(JsonHandler.getSuitableResponse(
 							requestHandler.getErrorMessage(), false));
 				}
-				User user = User.finder.byId(requestHandler
-						.getLongValue("userId"));
-				User userFollow = User.finder.byId(requestHandler
+				User followingUser = User.finder.byId(requestHandler
+						.getLongValue("followingUserId"));
+				User followedUser = User.finder.byId(requestHandler
 						.getLongValue("followedUserId"));
-				if (user == null || userFollow == null) {
+				if (followingUser == null || followedUser == null) {
 					return badRequest(JsonHandler.getSuitableResponse(
 							"user not found", false));
 				}
 
-				user.jumlahFollowingUser++;
-				userFollow.jumlahFollowerUser++;
-				String insertQuery = "insert into follower_user (follower_user_id, following_user_id) values (:follower_user_id, :following_user_id)";
+				followingUser.jumlahFollowedUser++;
+				followedUser.jumlahFollowingUser++;
+				
+				String insertQuery = "insert into follower_user (followed_user_id, following_user_id) values (:followed_user_id, :following_user_id)";
 				SqlUpdate sqlUpdate = Ebean.createSqlUpdate(insertQuery)
-						.setParameter("follower_user_id", user.idUser)
-						.setParameter("following_user_id", userFollow.idUser);
+						.setParameter("followed_user_id", followedUser.idUser )
+						.setParameter("following_user_id", followingUser.idUser) 
+						.setParameter("id_user", followingUser.idUser);
 				sqlUpdate.execute();
 
 				String updateQuery = "update user set "
-						+ "jumlah_follower_user =:jumlah_follower_user, "
+						+ "jumlah_followed_user =:jumlah_followed_user, "
 						+ "jumlah_following_user =:jumlah_following_user where"
 						+ " id_user=:id_user";
 				SqlUpdate sqlUpdate2 = Ebean
 						.createSqlUpdate(updateQuery)
-						.setParameter("jumlah_follower_user",
-								user.jumlahFollowerUser)
+						.setParameter("jumlah_followed_user",
+								followingUser.jumlahFollowedUser)
 						.setParameter("jumlah_following_user",
-								user.jumlahFollowingUser)
-						.setParameter("id_user", user.idUser);
+								followingUser.jumlahFollowingUser)
+						.setParameter("id_user", followingUser.idUser);
 				sqlUpdate2.execute();
 				sqlUpdate2 = Ebean
 						.createSqlUpdate(updateQuery)
-						.setParameter("jumlah_follower_user",
-								userFollow.jumlahFollowerUser)
+						.setParameter("jumlah_followed_user",
+								followedUser.jumlahFollowedUser)
 						.setParameter("jumlah_following_user",
-								userFollow.jumlahFollowingUser)
-						.setParameter("id_user", userFollow.idUser);
+								followedUser.jumlahFollowingUser)
+						.setParameter("id_user", followedUser.idUser);
 				sqlUpdate2.execute();
 
 				// userFollow.listFollowerUser.add(user);
@@ -647,7 +663,11 @@ public class BackEndUserController extends Controller implements Constants {
 				// userFollow.update();
 				// user.jumlahFollowingUser++;
 				// user.update();
-				return ok(JsonHandler.getSuitableResponse("success follow",
+				
+				followedUser = User.finder.byId(requestHandler
+						.getLongValue("followedUserId"));
+				followedUser.isFollowing = true;
+				return ok(JsonHandler.getSuitableResponse(followedUser,
 						true));
 			}
 		});
@@ -664,7 +684,7 @@ public class BackEndUserController extends Controller implements Constants {
 		Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
 			@Override
 			public Result apply() throws Throwable {
-				String key[] = { "userId", "followedUserId" };
+				String key[] = {"followedUserId", "followingUserId" };
 				RequestHandler requestHandler = new RequestHandler(true,
 						frmUser);
 				requestHandler.setArrayKey(key);
@@ -672,42 +692,43 @@ public class BackEndUserController extends Controller implements Constants {
 					return badRequest(JsonHandler.getSuitableResponse(
 							requestHandler.getErrorMessage(), false));
 				}
-				User user = User.finder.byId(requestHandler
-						.getLongValue("userId"));
-				User userFollow = User.finder.byId(requestHandler
+				User followingUser = User.finder.byId(requestHandler
+						.getLongValue("followingUserId"));
+				User followedUser = User.finder.byId(requestHandler
 						.getLongValue("followedUserId"));
-				if (user == null || userFollow == null) {
+				if (followingUser == null || followedUser == null) {
 					return badRequest(JsonHandler.getSuitableResponse(
 							"user not found", false));
 				}
 
-				user.jumlahFollowingUser--;
-				userFollow.jumlahFollowerUser--;
-				String insertQuery = "delete from follower_user where follower_user_id =:follower_user_id and following_user_id=:following_user_id";
+				followingUser.jumlahFollowedUser--;
+				followedUser.jumlahFollowingUser--;
+				
+				String insertQuery = "delete from follower_user where followed_user_id =:followed_user_id and following_user_id=:following_user_id";
 				SqlUpdate sqlUpdate = Ebean.createSqlUpdate(insertQuery)
-						.setParameter("follower_user_id", user.idUser)
-						.setParameter("following_user_id", userFollow.idUser);
+						.setParameter("followed_user_id", followedUser.idUser)
+						.setParameter("following_user_id",  followingUser.idUser );
 				sqlUpdate.execute();
 
 				String updateQuery = "update user set "
-						+ "jumlah_follower_user =:jumlah_follower_user, "
+						+ "jumlah_followed_user =:jumlah_followed_user, "
 						+ "jumlah_following_user =:jumlah_following_user where"
 						+ " id_user=:id_user";
 				SqlUpdate sqlUpdate2 = Ebean
 						.createSqlUpdate(updateQuery)
-						.setParameter("jumlah_follower_user",
-								user.jumlahFollowerUser)
+						.setParameter("jumlah_followed_user",
+								followingUser.jumlahFollowedUser)
 						.setParameter("jumlah_following_user",
-								user.jumlahFollowingUser)
-						.setParameter("id_user", user.idUser);
+								followingUser.jumlahFollowingUser)
+						.setParameter("id_user", followingUser.idUser);
 				sqlUpdate2.execute();
 				sqlUpdate2 = Ebean
 						.createSqlUpdate(updateQuery)
-						.setParameter("jumlah_follower_user",
-								userFollow.jumlahFollowerUser)
+						.setParameter("jumlah_followed_user",
+								followedUser.jumlahFollowedUser)
 						.setParameter("jumlah_following_user",
-								userFollow.jumlahFollowingUser)
-						.setParameter("id_user", userFollow.idUser);
+								followedUser.jumlahFollowingUser)
+						.setParameter("id_user", followedUser.idUser);
 				sqlUpdate2.execute();
 
 				// userFollow.listFollowerUser.remove(user);
@@ -716,7 +737,10 @@ public class BackEndUserController extends Controller implements Constants {
 				// user.listFollowingUser.remove(userFollow);
 				// user.jumlahFollowingUser--;
 				// user.update();
-				return ok(JsonHandler.getSuitableResponse("success unfollow",
+				followedUser = User.finder.byId(requestHandler
+						.getLongValue("followedUserId"));
+				followedUser.isFollowing = false;
+				return ok(JsonHandler.getSuitableResponse(followedUser,
 						true));
 			}
 		});
@@ -989,35 +1013,7 @@ public class BackEndUserController extends Controller implements Constants {
 		ObjectNode messageJson = Json.newObject();
 		messageJson.put("message", Json.toJson(privateMessage));
 
-		ObjectNode node = Json.newObject();
-		node.put("registration_ids", Json.toJson(arrayGcmId));
-		node.put("data", messageJson);
-		Promise<String> promise = WS
-				.url("https://android.googleapis.com/gcm/send")
-				.setHeader("Authorization", "key=" + API_KEY)
-				.setHeader("Content-Type", "application/json").post(node)
-				.map(new F.Function<WS.Response, String>() {
-
-					@Override
-					public String apply(play.libs.WS.Response arg0)
-							throws Throwable {
-						System.out.println(arg0.asJson().toString());
-						SendMessageResponse messageResponse = new Gson()
-								.fromJson(arg0.asJson().toString(),
-										SendMessageResponse.class);
-						System.out.println(arg0.asJson().toString());
-						if (messageResponse.getFailure() >= 1) {
-							PrivateMessage privateMessage = new PrivateMessage();
-							privateMessage.messageData = messageData;
-							privateMessage.userReceiver = userReceiver;
-							privateMessage.userSender = userSender;
-							privateMessage.time = Calendar.getInstance();
-							privateMessage.save();
-						}
-						// System.out.println(arg0.asJson().toString());
-						return arg0.asJson().toString();
-					}
-				});
+		sendGcm(arrayGcmId, messageJson);
 
 		// Promise<Result> promise = WS.url("http://127.0.0.1:9000/api/login")
 		// .post(node).map(
@@ -1077,6 +1073,171 @@ public class BackEndUserController extends Controller implements Constants {
 	 */
 	public static Result getListPrivateMessage() {
 		return ok();
+	}
+	/*
+	
+	 */
+	public static Promise<Result> find(){
+		Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+
+			@Override
+			public Result apply() throws Throwable {
+				String key[] = {"key_word", "type", "userId"};
+				RequestHandler requestHandler = new RequestHandler(true,frmUser);
+				requestHandler.setArrayKey(key);
+				if(requestHandler.isContainError()){
+					return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+				}
+				String type = requestHandler.getStringValue("type");
+				String keyWord = requestHandler.getStringValue("key_word");
+				
+				if(type.equalsIgnoreCase("laporan")){
+					List<Laporan> listLaporan = Laporan.finder.where().like("judul_laporan", "%"+ keyWord + "%").findList();
+					User user = User.finder.byId(requestHandler.getLongValue("userId"));
+					for (Laporan eLaporan : listLaporan) {
+						String select = "select user_id_user, laporan_id_laporan from user_laporan "
+								+ "where user_id_user=:id_user and laporan_id_laporan=:id_laporan";
+						SqlRow sqlRow = Ebean.createSqlQuery(select)
+								.setParameter("id_user", user.idUser)
+								.setParameter("id_laporan", eLaporan.idLaporan)
+								.findUnique();
+						if (sqlRow != null) {
+							eLaporan.pantau = true;
+						}
+					}
+					// if(eLaporan.listUserPemantau.contains(user)){
+					// eLaporan.pantau = true;
+					// }
+					// }
+
+					for (Laporan laporan2 : listLaporan) {
+						User user2 = User.finder.byId(laporan2.user.idUser);
+						laporan2.user = user2;
+					}
+					
+					return ok(JsonHandler.getSuitableResponse(listLaporan, true));
+				}
+				else {
+					List<User> listUser = User.finder.where().like("name", "%" +keyWord + "%").findList();
+					return ok(JsonHandler.getSuitableResponse(listUser, true));
+				}
+			}
+		});
+		return promise;
+	}
+	
+	public static Promise<Result> getListNotif(){
+		Promise<Result> promise = Promise.promise(new F.Function0<Result>() {
+			@Override
+			public Result apply() throws Throwable {
+				String key [] = {"userId"};
+				RequestHandler requestHandler = new RequestHandler(true, frmUser);
+				requestHandler.setArrayKey(key);
+				if(requestHandler.isContainError()){
+					return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+				}
+				String userId = requestHandler.getStringValue("userId");
+				
+				List<Notif> listNotif = Ebean.find(Notif.class).fetch("laporan.user").where().eq("id_user", userId).findList();//Notif.finder.where().eq("user_id_user", userId).setOrderBy("time desc").setMaxRows(5).findList();
+				
+				return ok(JsonHandler.getSuitableResponse(listNotif, true));
+			}
+		});
+		return promise;
+	}
+	
+	public static void createNotif(Laporan laporan, User user, String infoLaporan, String type){
+		if(!user.idUser.equals(laporan.user.idUser)){
+		Laporan laporanPemantau = Ebean.find(Laporan.class).fetch("user").fetch("listUserPemantau").where().idEq(laporan.idLaporan).findUnique();
+					
+			Notif notif = new Notif();
+			notif.laporan = laporanPemantau;
+			notif.user = User.finder.byId(user.idUser);
+			notif.notifInfo = infoLaporan;
+			notif.time = Calendar.getInstance();
+			notif.typeNotif = type;
+			notif.save();
+		
+		
+		
+		ObjectNode objectNode = Json.newObject();
+		objectNode.put("message", Json.toJson(notif));
+		
+//		String laporanId = laporan.idLaporan + "";
+		List<Komentar> komen = Ebean.find(Komentar.class).select("dataKomentar").fetch("user","name").where().eq("laporan_id_laporan", laporanPemantau.idLaporan).findList();
+		Set<String> gcm = new HashSet<String>();
+//		List<String> gcm = new ArrayList<String>();
+		for (Komentar k : komen) {
+			if(!k.user.idUser.equals(user.idUser) && k.user.idUser != null){
+				gcm.add(k.user.gcmId);	
+			}
+			System.out.println(k.user.gcmId);
+			
+		}
+//		Laporan laporanPemantau = Ebean.find(Laporan.class).fetch("user").fetch("listUserPemantau").where().idEq(laporanId).findUnique();
+		List<User> userPemantau = laporanPemantau.listUserPemantau;
+		for (User eU : userPemantau) {
+			if(!eU.idUser.equals(user.idUser) && eU.idUser != null){
+				gcm.add(eU.gcmId);	
+			}
+			
+		}
+		List<String> gcmList = new ArrayList<String>();
+		gcmList.addAll(gcm);
+		String gcmids[] = new String[gcmList.size()];
+		gcmList.toArray(gcmids);
+		sendGcm(gcmids, objectNode);
+		}
+	}
+	
+	public static void sendGcm(String [] arrayGcmId, ObjectNode messageJson){
+		ObjectNode node = Json.newObject();
+		node.put("registration_ids", Json.toJson(arrayGcmId));
+		node.put("data", messageJson);
+		Promise<String> promise = WS
+				.url("https://android.googleapis.com/gcm/send")
+				.setHeader("Authorization", "key=" + API_KEY)
+				.setHeader("Content-Type", "application/json").post(node)
+				.map(new F.Function<WS.Response, String>() {
+
+					@Override
+					public String apply(play.libs.WS.Response arg0)
+							throws Throwable {
+						System.out.println(arg0.asJson().toString());
+						SendMessageResponse messageResponse = new Gson()
+								.fromJson(arg0.asJson().toString(),
+										SendMessageResponse.class);
+
+						// System.out.println(arg0.asJson().toString());
+						return arg0.asJson().toString();
+					}
+				});
+	}
+	
+	/**
+	 * just test
+	 * @return
+	 */
+	public static Result getListGcm(){
+		String [] key = {"laporanId"};
+		RequestHandler requestHandler = new RequestHandler(frmUser);
+		requestHandler.setArrayKey(key);
+		if(requestHandler.isContainError()){
+			return badRequest(JsonHandler.getSuitableResponse(requestHandler.getErrorMessage(), false));
+		}
+		String laporanId = requestHandler.getStringValue("laporanId");
+		List<Komentar> komen = Ebean.find(Komentar.class).select("dataKomentar").fetch("user","name").where().eq("laporan_id_laporan", laporanId).findList();
+		Set<String> gcm = new HashSet<String>();
+//		List<String> gcm = new ArrayList<String>();
+		for (Komentar k : komen) {
+			gcm.add(k.user.gcmId);
+		}
+		Laporan laporan = Ebean.find(Laporan.class).fetch("user").fetch("listUserPemantau").where().idEq(laporanId).findUnique();
+		List<User> userPemantau = laporan.listUserPemantau;
+		for (User user : userPemantau) {
+			gcm.add(user.gcmId);
+		}
+		return ok(JsonHandler.getSuitableResponse(gcm,true));
 	}
 
 }
